@@ -1,15 +1,17 @@
-from math import factorial, log10
+#from math import factorial, log10
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('QtAgg', force=True)
 import os
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import shutil
-import io
-from PIL import Image
-from datetime import date, timedelta, datetime
-from time import mktime
+#import io
+#from PIL import Image
+#from datetime import date, timedelta, datetime
+#from time import mktime
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, QPushButton, \
                             QSpacerItem, QSizePolicy, QHeaderView, QRadioButton, QButtonGroup, QFormLayout, QScrollArea, QCheckBox, QGridLayout, \
@@ -22,15 +24,73 @@ from TabbedDialog.tableWithSignalSlot import *
 from CustomTool.getClassimDir import *
 from CustomTool.genDictOutput import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+#from matplotlib.figure import Figure
 from pandas.plotting import register_matplotlib_converters
-from shutil import copyfile
+#from shutil import copyfile
 register_matplotlib_converters()
-from pyqtgraph.Qt import QtGui, QtCore
+#from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
+#import textwrap
+
+
+
+
+
+'''
+from math import factorial, log10
+
+import numpy as np
+#import matplotlib.pyplot as plt
+import os
+#import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
+import pandas as pd
+import shutil
+import io
+from PIL import Image
+from datetime import date, timedelta, datetime
+from time import mktime
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget, QTabWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, QPushButton, \
+                            QSpacerItem, QSizePolicy, QHeaderView, QRadioButton, QButtonGroup, QFormLayout, QScrollArea, QCheckBox, QGridLayout, \
+                            QHeaderView, QGroupBox, QMenu, QAction, QGraphicsScene
+import pyqtgraph as pg
+
+# Enable OpenGL for better performance
+#pg.setConfigOption('useOpenGL', True)
+# Enable antialiasing for smoother plots
+#pg.setConfigOptions(antialias=True)
+
+from pyqtgraph.Qt import QtGui, QtCore
+from PyQt5.QtCore import Qt
+#from PyQt5.QtGui import QPixmap
+from pyqtgraph import PlotWidget, plot
+
+from PyQt5.QtGui import QPainter, QPen
+from CustomTool.custom1 import *
+from CustomTool.UI import *
+from DatabaseSys.Databasesupport import *
+from Models.cropdata import *
+from TabbedDialog.tableWithSignalSlot import *
+from CustomTool.getClassimDir import *
+from CustomTool.genDictOutput import *
+import matplotlib
+matplotlib.use('QtAgg', force=True)
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
+#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.figure import Figure
+
+from pandas.plotting import register_matplotlib_converters
+from shutil import copyfile
+register_matplotlib_converters()
 import textwrap
+'''
 
 global classimDir
 global runDir
@@ -149,6 +209,7 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         
         #add a scroll bar to window
         self.scrollArea = QtWidgets.QScrollArea() # self.centralWidget)
+        
         self.scrollContent = QtWidgets.QWidget(self.scrollArea)
         self.scrollContent.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         self.scrollContent.setLayout(self.mainlayout1)
@@ -166,6 +227,8 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
 
     def make_connection(self,rotation_object):
         rotation_object.rotationsig.connect(self.populate)
+
+
 
 
     def populate(self):
@@ -287,7 +350,10 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
                                                        'Litter_C':['mean'],'Manure_N':['mean'],'Manure_C':['mean'],
                                                        'Root_N':['mean'],'Root_C':['mean']})
 
-        t7 = t7.drop(columns=["X","Y"])
+        # Sort the MultiIndex
+     #   t7 = t7.sort_index()
+
+        t7 = t7.drop(columns=["X","Y"], level=0)
         t7.columns = ["_".join(x) for x in t7.columns.ravel()]
         t7.rename(columns={'Date_':'Date'}, inplace=True)
 
@@ -507,30 +573,36 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         exid = read_experimentDB_id(self.cropname,self.experimentname)
         tid = read_treatmentDB_id(exid,self.treatmentname)
         plantDensity = getPlantDensity(tid)
+        
+    #    print("Plant density: ", plantDensity)
 
        # Create dictionary to hold dataframes
         t5 = extract_cropOutputData(self.g05Tablename,self.simulationID)
+     #   print(t5['transp'])
 
 
         o_t_exid = getTreatmentID(self.treatmentname,self.experimentname,self.cropname) 
         t5_Irrig = getIrrigationData(self.simulationID,o_t_exid)
 
         Irrig_df = pd.DataFrame(t5_Irrig, columns=['Date','AmtIrrAppl'])
-       # print(Irrig_df)
+      #  print("Irrig_df:", Irrig_df)
+
         new_Irrig_df = Irrig_df
         new_Irrig_df['Date'] = pd.to_datetime(Irrig_df['Date'])
 
         # convert the date column to object format
         new_Irrig_df['Date'] = new_Irrig_df['Date'].dt.strftime('%Y-%m-%d')
-      #  print(new_Irrig_df)
+    #    print(new_Irrig_df)
 
     
         new_df = t5['Date_Time'].str.split(' ', n=1, expand=True)
         t5['Date'] = new_df[0]
-        
+      #  print("length of t5:", len(t5['Date']))
+       # print(t5['transp'])
         for key in self.varSurfChaFuncDict:           
             if key == "TotIrrig":               
                 t5 =  t5.groupby(['Date'], as_index=False).agg(sum)
+             #   print(t5)
                 merged_df = pd.merge(t5['Date'],new_Irrig_df, on='Date', how ='outer').fillna(0) 
                 t5['Date'] = merged_df['Date']                              
                 t51 = []
@@ -539,13 +611,16 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
                     if np.all(merged_df['AmtIrrAppl'][e] == 0.0) : 
                        t51.append(0) 
                     else:                          
-                        t51.append(merged_df['AmtIrrAppl'][e])
+                       t51.append(merged_df['AmtIrrAppl'][e])
+      #          print("t51:",len(t51))
+            #    print(t51)
                 t5[key] = Cumulative(t51)
             else :                
                 t5[key] = pd.to_numeric(t5[key],errors='coerce') 
+                            
                 t5 =  t5.groupby(['Date'], as_index=False).agg(max)
         t5 = t5.fillna(0)
-        print(t5['SeasRain'], t5['TotIrrig'])
+      #  print(t5['SeasRain'], t5['TotIrrig'])
       
         t5_grouped = t5.groupby(['Date'], as_index=False).agg(self.varSurfChaFuncDict)
 
@@ -617,7 +692,8 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         self.rowNumChecked = [self.table2.simGrp.buttons()[x].isChecked() for x in range(len(self.table2.simGrp.buttons()))].index(True)
         self.simulationID = self.table2.simGrp.buttons()[self.rowNumChecked].text()
         self.sitename = self.table2.item(self.rowNumChecked,1).text()    
-        self.cropname = self.table2.item(self.rowNumChecked,5).text().split('/')[0]   
+        self.cropname = self.table2.item(self.rowNumChecked,5).text().split('/')[0] 
+        self.cropnameyld = self.cropname
         self.experimentname = self.table2.item(self.rowNumChecked,5).text().split('/')[1]   
         self.treatmentname = self.table2.item(self.rowNumChecked,5).text().split('/')[2]   
         self.stationtypename = self.table2.item(self.rowNumChecked,3).text()    
@@ -726,20 +802,30 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
             if jj[1] == "Irrigation":
                 IrrigationDateList.append(jj[2])       
                 irrInfo = readOpDetails(jj[0],jj[1])
+            #    print("FFFFF")
+              #  print(IrrigationDateList, jj[2])
+             #   print(irrInfo)
                 for j in range(len(irrInfo)):
-                    if irrInfo[j][3] == "Sprinkler":
-                        totalirrAppl = totalirrAppl + irrInfo[j][4]
-             #   print(totalirrAppl)
+                    if irrInfo[j][2] == "Sprinkler":
+                        totalirrAppl = totalirrAppl + irrInfo[j][4]                              
+                  #  elif irrInfo[j][2] == "FloodH":
+                   #     totalirrAppl = totalirrAppl + irrInfo[j][3]
+            #    print(totalirrAppl)
 
         FertilizerDate = ""
         if len(FertilizerDateList) >= 1:
             FertilizerDate = ", "
             FertilizerDate = FertilizerDate.join(FertilizerDateList) 
+
+        FertilizerDateList.sort(key=lambda FertilizerDateList: datetime.strptime(FertilizerDateList, '%m/%d/%Y'))
+     
         
         IrrigationDate = ""
         if len(IrrigationDateList) >= 1:
             IrrigationDate = ", "
             IrrigationDate = IrrigationDate.join(IrrigationDateList) 
+            
+        IrrigationDateList.sort(key=lambda IrrigationDateList: datetime.strptime(IrrigationDateList, '%m/%d/%Y'))
 
         PGRDate = ""
         if len(PGRDateList) >= 1:
@@ -748,7 +834,7 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
 
        # wrapper = textwrap.TextWrapper(width=22)
       #  word_list,_ = wrapper.wrap(text=IrrigationDate)
-        print(IrrigationDateList)
+   
         self.simSummaryGen = "<i>General Information </i>"
         self.simSummaryGen += "<br><i>Site: </i>" + self.sitename
         self.simSummaryGen += "<br><i>Soil: </i>" + self.soilname
@@ -817,6 +903,7 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
             self.simSummaryAgroDates += "<br><i>Total biomass: </i>" +  '{:3.2f}'.format(agroDataTuple[1]*plantDensity*10) + " kg/ha"
             self.simSummaryAgroDates += "<br><i>Nitrogen Uptake: </i>" +  '{:3.2f}'.format(NitrogenUptakeTuple[0]*plantDensity*10) + " kg/ha"
             self.simSummaryAgroDates += "<br><i>Transpiration: </i>" +  '{:3.2f}'.format(agroDataTuple[2]*plantDensity/1000) + " mm"
+            self.yld = agroDataTuple[0]*plantDensity*10
         elif self.cropname == "maize":
             if(MaturityDate != "N/A"):
                 agroDataTuple = getMaizeAgronomicData(self.simulationID, MaturityDate)
@@ -829,6 +916,8 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
                 self.envSummaryData = "<i>Simulation Environmental Data at <br>" + HarvestDate + " (harvest date)</i>"
                 self.simSummaryAgroDates = "<i>Simulation Agronomic Data at <br>" + HarvestDate + " (harvest date)</i>"
             self.simSummaryAgroDates += "<br><i>Yield: </i>" + '{:3.2f}'.format(agroDataTuple[0]*plantDensity*10) + " kg/ha"
+            self.yld = agroDataTuple[0]*plantDensity*10
+           # print("Yield: ", agroDataTuple[0]*plantDensity*10)
             self.simSummaryAgroDates += "<br><i>Total biomass: </i>" + '{:3.2f}'.format(agroDataTuple[1]*plantDensity*10) + " kg/ha"
             self.simSummaryAgroDates += "<br><i>Nitrogen Uptake: </i>" +  '{:3.2f}'.format(agroDataTuple[2]*plantDensity*10) + " kg/ha"
         elif self.cropname == "cotton":
@@ -846,11 +935,12 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
             self.simSummaryAgroDates += "<br><i>Yield: </i>" + '{:3.2f}'.format(yieldDataTuple[1]) + " kg/ha"
             self.simSummaryAgroDates += "<br><i>Total biomass: </i>" + '{:3.2f}'.format(yieldDataTuple[2]*plantDensity*10) + " kg/ha"
             self.simSummaryAgroDates += "<br><i>Nitrogen Uptake: </i>" + '{:3.2f}'.format(yieldDataTuple[3]*plantDensity*10) + " kg/ha"
+            self.yld = yieldDataTuple[1]
         elif self.cropname == "fallow":
             envDataTuple = getEnvironmentalData(self.simulationID, "", self.cropname)
             self.envSummaryData = "<i>Simulation Environmental Data </i>"
         self.simSummaryAgroDates += "<br><i>Total Nitrogen Applied: </i>" + '{:3.2f}'.format(totalNAppl) + " kg/ha"
-        self.simSummaryAgroDates += "<br><i>Total Irrigation Applied: </i>" + '{:3.2f}'.format(totalirrAppl) + " mm"
+        self.simSummaryAgroDates += "<br><i>Total Irrigation Applied: </i>" + '{:3.2f}'.format(totalirrAppl) + " cm"
         genInfoBoxAgroDatesLabel.setText(self.simSummaryAgroDates)
  
         self.envSummaryData += "<br><i>Total Potential Transpiration: </i>" + '{:3.2f}'.format(envDataTuple[0]) + " mm"
@@ -1174,21 +1264,32 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         self.totWaterLayerPlot.clear()
         self.totWaterLayerPlot.setLabel("bottom", "Date")
         self.totWaterLayerPlot.showGrid(x=True, y=True)
-        try:
-            self.totWaterLayerPlotLegend.scene().removeItem(self.totWaterLayerPlotLegend)
-        except Exception as e:
-            print(e)
+        
+        #Initilize totWaterLayerPlotLegend
         self.totWaterLayerPlotLegend = self.totWaterLayerPlot.addLegend()
+     #   self.totWaterLayerPlot.getViewBox().sigResized.connect(self.updateLegendPosition)
 
+      #  self.totWaterLayerPlot.sigResized.connect(self.updateLegendPosition)
+      #  self.totWaterLayerPlot = self.resizeEvent()
+        
+     #   try:
+     #       self.totWaterLayerPlotLegend.scene().removeItem(self.totWaterLayerPlotLegend)
+      #  except Exception as e:
+      #      print(e)
+      
         # Set water content by layer plot legend and x-axis label
         self.waterContentLayerPlot.clear()
         self.waterContentLayerPlot.setLabel("bottom", "Date")
         self.waterContentLayerPlot.showGrid(x=True, y=True)
-        try:
-            self.waterContentLayerPlotLegend.scene().removeItem(self.waterContentLayerPlotLegend)
-        except Exception as e:
-            print(e)
+        
+        #Initialize waterContentLayerPlotLegend
         self.waterContentLayerPlotLegend = self.waterContentLayerPlot.addLegend()
+        
+    #    try:
+      #      self.waterContentLayerPlotLegend.scene().removeItem(self.waterContentLayerPlotLegend)
+     #   except Exception as e:
+     #       print(e)
+     
 
         # Set NNO3 concentration for profile plot x-axis label
         self.NNO3ConcProfilePlot.clear()
@@ -1199,22 +1300,29 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         self.NNO3ConcLayerPlot.clear()
         self.NNO3ConcLayerPlot.setLabel("bottom", "Date")
         self.NNO3ConcLayerPlot.showGrid(x=True, y=True)
-        try:
-            self.NNO3ConcLayerPlotLegend.scene().removeItem(self.NNO3ConcLayerPlotLegend)
-        except Exception as e:
-            print(e)
+        
+         # Initialize NNO3ConcLayerPlotLegend
         self.NNO3ConcLayerPlotLegend = self.NNO3ConcLayerPlot.addLegend()
+
+   #     try:
+   #         self.NNO3ConcLayerPlotLegend.scene().removeItem(self.NNO3ConcLayerPlotLegend)
+   #     except Exception as e:
+   #         print(e)
+     
 
         # Set Temp plot legend and x-axis label
         self.tempPlot.clear()
         self.tempPlot.setLabel("bottom", "Date")
         self.tempPlot.showGrid(x=True, y=True)
-        try:
-            self.tempPlotLegend.scene().removeItem(self.tempPlotLegend)
-        except Exception as e:
-            print(e)
+        
+        # Initialize tempPlotLegend
         self.tempPlotLegend = self.tempPlot.addLegend()
-
+        
+    #    try:
+    #        self.tempPlotLegend.scene().removeItem(self.tempPlotLegend)
+    #    except Exception as e:
+     #       print(e)
+    
         pen = pg.mkPen('r', width=3)
 
         # total water profile
@@ -1393,4 +1501,26 @@ categorized into 5 types and are displayed individually in bottom tabbed panel."
         if self.helpcheckbox.isChecked():
             self.faqtree.setVisible(True)
         else:
-            self.faqtree.setVisible(False)              
+            self.faqtree.setVisible(False)  
+    
+    '''       
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.updateLegendPosition()
+    
+    def updateLegendPosition(self):
+    # Get the current plot dimensions
+        plot_width = self.totWaterLayerPlot.width()
+        plot_height = self.totWaterLayerPlot.height()
+    
+        if not self.totWaterLayerPlot.items():
+            # Default position when no plots exist (centered or safely positioned)
+            desired_x = plot_width * 0.05  # Small margin from the left
+            desired_y = plot_height * 0.05  # Small margin from the top
+        else:
+            # Dynamically position based on available space
+            desired_x = plot_width - self.totWaterLayerPlotLegend.boundingRect().width() - 10
+            desired_y = plot_height * 0.8  # Keep it near the lower portion
+
+        self.totWaterLayerPlotLegend.setPos(desired_x, desired_y)
+    '''

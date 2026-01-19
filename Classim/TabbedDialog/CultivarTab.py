@@ -54,7 +54,7 @@ class Cultivar_Widget(QWidget):
         self.helpcheckbox.setChecked(False)
         self.helpcheckbox.stateChanged.connect(self.controlfaq)
 
-        urlLink="<a href=\"https://www.ars.usda.gov/northeast-area/beltsville-md-barc/beltsville-agricultural-research-center/adaptive-cropping-systems-laboratory/\">Click here \
+        urlLink="<a href=\"https://youtu.be/P5fNfOmCGDM\">Click here \
                 to watch the Cultivar Tab Video Tutorial</a><br>"
         self.cultivarVidlabel=QLabel()
         self.cultivarVidlabel.setOpenExternalLinks(True)
@@ -490,7 +490,6 @@ class Cultivar_Widget(QWidget):
             self.cultivarbutton.setVisible(False)   
         else:
             self.cropname = self.cropcombo.itemText(self.cropcombo.currentIndex())
-            print(self.cropname)
             cultivarlists = read_cultivar_DB(self.cropname) 
             self.cultivarcombo.clear()
             self.cultivarcombo.addItem("Select from list")  
@@ -537,6 +536,7 @@ class Cultivar_Widget(QWidget):
         self.staygreenlavel.setVisible(state)
         self.staygreenedit.setVisible(state)
         return True
+
 
     def potatoFieldSwitch(self,state):
         self.dailyAirTempEffectLabel.setVisible(state)
@@ -691,14 +691,12 @@ class Cultivar_Widget(QWidget):
         self.calbrt57Edit.setVisible(state)
         return True
 
-
-
+ 
 
     def showcultivardetailscombo(self):
 
         if self.cultivarcombo.currentText() == "Add New Cultivar ("+self.cropname+")" or \
-             self.cultivarcombo.itemText(self.cultivarcombo.currentIndex()) == "":
-            print(self.cultivarcombo.currentText())
+            self.cultivarcombo.itemText(self.cultivarcombo.currentIndex()) == "":
             self.cultivarbutton.setVisible(True)
             self.cultivarbutton.setText("SaveAs")
             self.cultivardeletebutton.setVisible(True)
@@ -823,11 +821,11 @@ class Cultivar_Widget(QWidget):
                 self.potatoFieldSwitch(False)
                 self.soybeanFieldSwitch(False)
                 self.cottonFieldSwitch(False)
-                print(self.cultivarcombo.currentText())           
+         
                 if self.cultivarcombo.currentText() != "Select from list" :
                     (crop,cultivar) =(self.cultivarcombo.currentText()).split(":")
                     cultivartuple = read_cultivar_DB_detailed(cultivar,crop)  
-                    print(cultivartuple)
+                  
                     if cultivartuple[0] is not None:
                         self.leavesedit.setText(str(cultivartuple[0]))
                     if cultivartuple[1] > 0:
@@ -870,7 +868,7 @@ class Cultivar_Widget(QWidget):
                 self.potatoFieldSwitch(False)
                 self.soybeanFieldSwitch(True)
                 self.cottonFieldSwitch(False)
-                print(self.cultivarcombo.currentText())
+              
                 if self.cultivarcombo.currentText() != "Select from list" :
                     (crop,cultivar) =(self.cultivarcombo.currentText()).split(":")
                     cultivartuple = read_cultivar_DB_detailed(cultivar,crop)  
@@ -991,8 +989,7 @@ class Cultivar_Widget(QWidget):
         elif self.cultivarbutton.text() == 'Update':
             if self.cultivarcombo.currentText() != "Select from list":
                 crop_cultivar = str(self.cultivarcombo.currentText())  
-                print(crop_cultivar)
-                print("The data have been updated")
+
                 if crop == 'maize':
                         record_tuple = (crop_cultivar, self.leavesedit.text(), self.ltaredit.text(),self.ltiredit.text(), self.tasseledit.text(), self.staygreenedit.text())
             

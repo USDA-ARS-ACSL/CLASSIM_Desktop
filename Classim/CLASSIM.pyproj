@@ -10,10 +10,15 @@
     <SearchPath>helper</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <PublishUrl>
-    </PublishUrl>
+    <Name>classim_rb</Name>
+    <RootNamespace>crop_int</RootNamespace>
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <PublishUrl>C:\Users\Maura.Tokay\Documents\VisualStudio\Workspace\crop_int\</PublishUrl>
     <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
-    <InterpreterId>Global|VisualStudio|classim22</InterpreterId>
+    <InterpreterId>CondaEnv|CondaEnv|classim22</InterpreterId>
     <SuppressPackageInstallationPrompt>True</SuppressPackageInstallationPrompt>
     <TestFramework>none</TestFramework>
     <UnitTestPattern>test*.py</UnitTestPattern>
@@ -34,8 +39,6 @@
     <Compile Include="CustomTool\custom1.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CustomTool\genDictOutput.py" />
-    <Compile Include="CustomTool\generateModelInputFiles.py" />
     <Compile Include="CustomTool\getClassimDir.py" />
     <Compile Include="CustomTool\UI.py" />
     <Compile Include="CustomTool\__init__.py">
@@ -54,16 +57,18 @@
     <Compile Include="Models\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="TabbedDialog\AboutTab.py" />
     <Compile Include="TabbedDialog\CultivarTab.py" />
+    <Compile Include="CustomTool\genDictOutput.py" />
     <Compile Include="TabbedDialog\OutputTab.py" />
+    <Compile Include="TabbedDialog\RotationTab.py" />
     <Compile Include="TabbedDialog\RotOutputTab.py" />
     <Compile Include="TabbedDialog\SeasonalTab.py" />
     <Compile Include="TabbedDialog\SiteTab.py" />
     <Compile Include="TabbedDialog\SoilTab.py" />
+    <Compile Include="TabbedDialog\AboutTab.py" />
     <Compile Include="TabbedDialog\VidTutorial.py" />
     <Compile Include="TabbedDialog\WelcomeTab.py" />
-    <Compile Include="TabbedDialog\RotationTab.py">
+    <Compile Include="CustomTool\generateModelInputFiles.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="TabbedDialog\tableWithSignalSlot.py">
@@ -87,6 +92,10 @@
     <Folder Include="TabbedDialog\" />
   </ItemGroup>
   <ItemGroup>
+    <InterpreterReference Include="CondaEnv|CondaEnv|classim22" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="helper\module_soiltriangle.pyd" />
     <Content Include="images\branch-closed.png" />
     <Content Include="images\branch-end.png" />
     <Content Include="images\branch-more.png" />
@@ -96,9 +105,6 @@
     <Content Include="images\USDA_logo.png" />
     <Content Include="images\vline.png" />
     <Content Include="requirements.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <InterpreterReference Include="Global|VisualStudio|classim22" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

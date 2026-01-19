@@ -7,6 +7,8 @@ def getClassimDir():
     location = wrg.HKEY_CURRENT_USER
     # Find path for documents
     keyPath = wrg.OpenKeyEx(location,r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders',0,wrg.KEY_READ)
+    
+ 
     # Query keyPath
     dirPath, reg = wrg.QueryValueEx(keyPath,r'Personal')
     if "%" in dirPath:

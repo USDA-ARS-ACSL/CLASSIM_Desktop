@@ -119,4 +119,5 @@ if __name__ == '__main__':
     conn, c = openDB('crop.db')
     if c:
         ManagementTab = Tabs_Widget()
+
         sys.exit(app.exec_())

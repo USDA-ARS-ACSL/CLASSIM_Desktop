@@ -1,3 +1,4 @@
+from sqlite3 import Date
 import subprocess
 import time
 import os
@@ -6,7 +7,7 @@ import sys
 import re
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, QPushButton, \
                             QSpacerItem, QSizePolicy, QHeaderView, QRadioButton, QButtonGroup, QMenu, QCheckBox, QGridLayout, QGroupBox, \
-                            QHeaderView
+                            QHeaderView, QCalendarWidget
 from PyQt5.QtCore import QFile, QTextStream, pyqtSignal, QCoreApplication
 from CustomTool.custom1 import *
 from CustomTool.UI import *
@@ -16,6 +17,8 @@ from Models.cropdata import *
 from TabbedDialog.tableWithSignalSlot import *
 from subprocess import Popen
 from dateutil.parser import parse
+#import matplotlib
+#matplotlib.use('Qt5Agg')
 
 global classimDir
 global runDir
@@ -46,12 +49,15 @@ remOutputFilesFlag = 1
 
 ## This should always be there
 if not os.path.exists(storeDir):
-    print('RotationTab Error: Missing storeDir')
+    print('SeasonalTab Error: Missing storeDir')
 
 class Seasonal_Widget(QWidget):
     # Add a signal
     rotationsig = pyqtSignal(int)    
+    exsystemsig = pyqtSignal(int)
+    
     changedValue = pyqtSignal(int)
+    checkbox_checked = pyqtSignal()
     def __init__(self):
         super(Seasonal_Widget,self).__init__()
         self.init_ui()
@@ -84,7 +90,7 @@ start your simulation.")
         self.helpcheckbox.setChecked(False)
         self.helpcheckbox.stateChanged.connect(self.controlfaq)
 
-        urlLink="<a href=\"https://www.ars.usda.gov/northeast-area/beltsville-md-barc/beltsville-agricultural-research-center/adaptive-cropping-systems-laboratory/\">Click here \
+        urlLink="<a href=\"https://youtu.be/eL-0s_qccuQ\">Click here \
                 to watch the Seasonal Tab Video Tutorial</a><br>"
         self.seasonalVidlabel=QLabel()
         self.seasonalVidlabel.setOpenExternalLinks(True)
@@ -102,8 +108,18 @@ start your simulation.")
         self.rgroupbox = QGroupBox("Simulator")
         self.stationTypeCombo = QComboBox()        
         self.weatherCombo = QComboBox()        
-        self.expTreatCombo = QComboBox()          
+        self.expTreatCombo = QComboBox()  
 
+       
+        self.ExpSys = QCheckBox("Expert System")
+        self.ExpSys.setChecked(False)
+       
+        self.selectExpSys()
+
+        self.inseason_date = None
+        self.ExpSys.stateChanged.connect(self.SelectInSeaDate)
+
+       
         sitelists = read_sitedetailsDB()
         self.siteCombo = QComboBox()
         self.siteCombo.addItem("Select from list")
@@ -168,7 +184,9 @@ start your simulation.")
                                                              background: white;}")
         self.tablebasket.verticalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
         self.tablebasket.verticalHeader().customContextMenuRequested.connect(self.tableverticalheader_popup)
+      #  self.tablebaskethheaderlabels = ["Expert System", "Site","Soil","Station Name","Weather","Crop","Experiment/Treatment", "StartYear","EndYear","Water\nStress","Nitrogen\nStress","Temp\nVariance (oC)","Rain\nVariance (%)","CO2\nVariance (ppm)"]
         self.tablebaskethheaderlabels = ["Site","Soil","Station Name","Weather","Crop","Experiment/Treatment", "StartYear","EndYear","Water\nStress","Nitrogen\nStress","Temp\nVariance (oC)","Rain\nVariance (%)","CO2\nVariance (ppm)"]
+         
         self.tablebasket.clear()
         self.tablebasket.setRowCount(0)
         self.tablebasket.setRowCount(1)
@@ -189,7 +207,22 @@ start your simulation.")
         self.tablebasket.horizontalHeader().setSectionResizeMode(10,QHeaderView.ResizeToContents)
         self.tablebasket.horizontalHeader().setSectionResizeMode(11,QHeaderView.ResizeToContents)
         self.tablebasket.horizontalHeader().setSectionResizeMode(12,QHeaderView.ResizeToContents)
-
+       # self.tablebasket.horizontalHeader().setSectionResizeMode(13,QHeaderView.ResizeToContents)
+        '''
+        self.tablebasket.setCellWidget(0,0,self.ExpSys)
+        self.tablebasket.setCellWidget(0,1,self.siteCombo)
+        self.tablebasket.setCellWidget(0,2,self.soilCombo)
+        self.tablebasket.setCellWidget(0,3,self.stationTypeCombo)
+        self.tablebasket.setCellWidget(0,4,self.weatherCombo)
+        self.tablebasket.setCellWidget(0,5,self.cropCombo)
+        self.tablebasket.setCellWidget(0,6,self.expTreatCombo)
+        self.tablebasket.setCellWidget(0,9,self.comboWaterStress)
+        self.tablebasket.setCellWidget(0,10,self.comboNitroStress)
+        self.tablebasket.setCellWidget(0,11,self.comboTempVar)
+        self.tablebasket.setCellWidget(0,12,self.comboRainVar)
+        self.tablebasket.setCellWidget(0,13,self.comboCO2Var)
+        '''
+       
         self.tablebasket.setCellWidget(0,0,self.siteCombo)
         self.tablebasket.setCellWidget(0,1,self.soilCombo)
         self.tablebasket.setCellWidget(0,2,self.stationTypeCombo)
@@ -222,15 +255,15 @@ start your simulation.")
         self.step_g.addButton(self.step_daily,2)
 
         self.subgrid1 = QGridLayout()
-        self.subgrid1.addWidget(self.tablebasket,2,0,4,5)
-
+        self.subgrid1.addWidget(self.tablebasket,2,0,3,4)
+        self.subgrid1.addWidget(self.ExpSys,5,0)
         self.SimulationFlabel = QLabel("Simulation Output Interval")
         self.subgrid1.addWidget(self.SimulationFlabel,6,0)
         self.subgrid1.addWidget(self.step_hourly,6,1)
         self.subgrid1.addWidget(self.step_daily,6,2)
         
         self.SimulationFlabel.setObjectName("SimulationFlabel")
-
+       
         self.subgrid1.addWidget(self.buttonrun,7,0)
         self.subgrid1.addWidget(self.buttonreset,7,1)
         self.subgrid1.addWidget(self.simStatus,8,0,1,5)
@@ -242,20 +275,40 @@ start your simulation.")
               
         self.hl2 = QHBoxLayout()                
         self.rgroupbox.setLayout(self.subgrid1)
+
         self.hl2.addWidget(self.rgroupbox)
+
+       
+        
         
         self.vl1.addLayout(self.hl1)
         self.vl1.addWidget(self.seasonalVidlabel)
         self.vl1.addWidget(self.helpcheckbox)
+     
         self.vl1.addLayout(self.hl2)
         self.vl1.addStretch(1)
+        
         self.mainlayout1.addLayout(self.vl1,0,0)
         self.mainlayout1.setColumnStretch(0,3)
         self.mainlayout1.addWidget(self.faqtree,0,4)
         self.setLayout(self.mainlayout1)
   
+   
+
+
+    def selectExpSys(self):
+        if self.ExpSys.isChecked():
+            self.checkbox_checked.emit()            
+       
+            
+           # self.emit_signal()
+
+   # def emit_signal(self, state):
+                   # Emit the signal when the checkbox is not checked
+     #       self.checkbox_checked.emit()
 
     def reset(self):
+        self.ExpSys.setChecked(False)
 
         while self.tablebasket.rowCount() > 0:
             self.tablebasket.removeRow(0)        
@@ -314,6 +367,7 @@ start your simulation.")
             self.comboCO2Var.addItem(str(co2))
         self.comboCO2Var.setCurrentIndex(self.comboCO2Var.findText("None"))
 
+       # self.tablebasket.setCellWidget(0,0,self.ExpSys)
         self.tablebasket.setCellWidget(0,0,self.siteCombo)
         self.tablebasket.setCellWidget(0,1,self.soilCombo)
         self.tablebasket.setCellWidget(0,2,self.stationTypeCombo)
@@ -325,6 +379,9 @@ start your simulation.")
         self.tablebasket.setCellWidget(0,10,self.comboTempVar)
         self.tablebasket.setCellWidget(0,11,self.comboRainVar)
         self.tablebasket.setCellWidget(0,12,self.comboCO2Var)
+
+       
+        
 
 
     def tableverticalheader_popup(self, pos):
@@ -415,6 +472,7 @@ start your simulation.")
                 self.comboCO2Var.addItem(str(co2))
             self.comboCO2Var.setCurrentIndex(self.comboCO2Var.findText("None"))
 
+          #  self.tablebasket.setCellWidget(0,0,self.ExpSys)
             self.tablebasket.setCellWidget(0,0,self.siteCombo)
             self.tablebasket.setCellWidget(0,1,self.soilCombo)
             self.tablebasket.setCellWidget(0,2,self.stationTypeCombo)
@@ -495,6 +553,7 @@ start your simulation.")
             self.comboCO2Var.addItem(str(co2))
         self.comboCO2Var.setCurrentIndex(self.comboCO2Var.findText("None"))
 
+     #   self.tablebasket.setCellWidget(newrowindex,0,self.ExpSys)
         self.tablebasket.setCellWidget(newrowindex,0,self.siteCombo)
         self.tablebasket.setCellWidget(newrowindex,1,self.soilCombo)
         self.tablebasket.setCellWidget(newrowindex,2,self.stationTypeCombo)
@@ -545,7 +604,49 @@ start your simulation.")
         self.tablebasket.setCellWidget(crow,3,self.weatherCombo)
         return True
 
+    def showexperimentcombo(self):
+        crop = self.cropCombo.currentText()
+        crow = self.tablebasket.currentRow()
+        if(crow == -1):
+            crow = 0
+        stationtype = self.stationTypeCombo.currentText()
+        weather_id= self.weatherCombo.currentText()
+       # weatherID = read_weather_id_forstationtype(stationtype)
+        rlist_max, rlist_min = read_weatherDate_forstationtype(stationtype,weather_id)
+      #  print("rlist_min, rlist_max: ",  rlist_min, rlist_max )
+       # print(type(rlist_min))
 
+        r_min = parse(rlist_min)
+        r_max = parse(rlist_max)
+
+        wea_min = r_min.strftime("%Y")
+        wea_max = r_max.strftime("%Y")
+
+        self.expTreatCombo = QComboBox()          
+        if crop != "Select from list":
+            self.experimentlists = getExpTreatByCrop(crop)      
+         #   self.experimentlists = getExpTreatByCropWeatherDate(crop,stationtype,weatherID)
+            
+            self.expTreatCombo.addItem("Select from list") 
+            for val in self.experimentlists:
+                cropExperimentTreatment = "".join([crop,'/',val])
+              #  print(cropExperimentTreatment)
+                weatheryears_list = read_weatheryears_fromtreatment(cropExperimentTreatment)
+             #   print(weatheryears_list)
+                num_weatheryears_list = len(weatheryears_list)
+                if num_weatheryears_list == 1:
+                    if (int(wea_min) <= weatheryears_list[0] <= int(wea_max)):
+                       self.expTreatCombo.addItem(val)
+                elif num_weatheryears_list == 2:
+                    if (weatheryears_list[0] >= int(wea_min)) and (weatheryears_list[1] <= int(wea_max)):
+                        self.expTreatCombo.addItem(val)
+                else:
+                    pass
+       
+        self.expTreatCombo.currentIndexChanged.connect(self.showtreatmentyear)
+        self.tablebasket.setCellWidget(crow,5,self.expTreatCombo)
+        return True
+    '''
     def showexperimentcombo(self):
         crop = self.cropCombo.currentText()
         crow = self.tablebasket.currentRow()
@@ -588,7 +689,7 @@ start your simulation.")
         self.expTreatCombo.currentIndexChanged.connect(self.showtreatmentyear)
         self.tablebasket.setCellWidget(crow,5,self.expTreatCombo)
         return True
-
+    '''
 
     def showtreatmentyear(self):
         currentrow = self.tablebasket.currentRow()
@@ -601,10 +702,10 @@ start your simulation.")
             self.tablebasket.setItem(currentrow,7,QTableWidgetItem(""))
         else:
             cropExperimentTreatment = "".join([crop,'/',experiment])
-            print("cropExperimentTreatment=",cropExperimentTreatment)
+        #    print("cropExperimentTreatment=",cropExperimentTreatment)
             # get weather years
             weatheryears_list = read_weatheryears_fromtreatment(cropExperimentTreatment)
-            print(weatheryears_list)
+          #  print(weatheryears_list)
             syear = str(weatheryears_list[0])
             eyear = str(weatheryears_list[-1])
             self.tablebasket.setItem(currentrow,6,QTableWidgetItem(syear))
@@ -695,13 +796,17 @@ start your simulation.")
         """
         this will create input files, and execute both exe's
         """
+
         field_path = os.path.join(runDir,str(simulation_name[0]))
         if not os.path.exists(field_path):
             os.makedirs(field_path)
 
+     #   print("Check this part:",self.inseason_date)
+
         field_name= self.tablebasket.cellWidget(irow,0).currentText()  
         lsoilname = self.tablebasket.cellWidget(irow,1).currentText()
         lstationtype = self.tablebasket.cellWidget(irow,2).currentText()
+        #print("lstationtype:", lstationtype)
         lweather = self.tablebasket.cellWidget(irow,3).currentText()
         lcrop = self.tablebasket.cellWidget(irow,4).currentText()
         lexperiment = self.tablebasket.cellWidget(irow,5).currentText().split('/')[0]
@@ -722,7 +827,7 @@ start your simulation.")
 
         #copy water.dat file from store to runDir
         src_file = storeDir+'\\Water.DAT'
-        dest_file = field_path+'\\Water.DAT'
+        dest_file = field_path+'\\WatMovParam.DAT'
         copyFile(src_file,dest_file) 
 
         waterfilecontent=[]
@@ -739,7 +844,7 @@ start your simulation.")
 
         #copy waterBound.dat file from store to runDir
         src_file= storeDir+'\\WaterBound.DAT'
-        dest_file= field_path+'\\WatMovParam.dat'
+        dest_file= field_path+'\\Water.dat'
         copyFile(src_file,dest_file)
 
         
@@ -756,11 +861,29 @@ start your simulation.")
             dest_file= field_path+'\\fallow.var'
             copyFile(src_file,dest_file)
         WriteDripIrrigationFile(field_name,field_path)
-        hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var)
+
+        
+        if self.ExpSys.isChecked():
+            linSeaDate = self.inseason_date
+       #     print("Expert System: ", linSeaDate)
+            hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var,linSeaDate)
+         #   print("edate:", edate)
+            
+        else :
+            linSeaDate = None
+            hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var,linSeaDate)
+       #     print("edate: ", edate)
+    
         WriteSoluteFile(lsoilname,field_path)
         WriteGasFile(field_path)
         hourlyFlag = 1 if self.step_hourly.isChecked() else 0
-        WriteTimeFileData(ltreatmentname,lexperiment,lcrop,lstationtype,hourlyFlag,field_name,field_path,hourly_flag,0)
+
+
+        if self.ExpSys.isChecked():
+            WriteTimeFileDataExpSys(ltreatmentname,lexperiment,lcrop,lstationtype,hourlyFlag,field_name,field_path,hourly_flag,linSeaDate,0)
+        else :
+            WriteTimeFileData(ltreatmentname,lexperiment,lcrop,lstationtype,hourlyFlag,field_name,field_path,hourly_flag,0)
+
         WriteNitData(lsoilname,field_name,field_path,rowSpacing)
         self.WriteLayerGas(lsoilname,field_name,field_path,rowSpacing,rootWeightPerSlab)
        # WriteSoiData(lsoilname,field_name,field_path)
@@ -772,7 +895,7 @@ start your simulation.")
         WriteMulchGeo(field_path,surfResType)
         o_t_exid = getTreatmentID(ltreatmentname,lexperiment,lcrop)
 
-        WriteIrrigation(field_name,field_path,irrType, simulation_name, o_t_exid)
+        WriteIrrigation(field_name,field_path, simulation_name, o_t_exid)
 
         WriteRunFile(lcrop,lsoilname,field_name,cultivar,field_path,lstationtype)            
         src_file= field_path+"\\"+field_name+".lyr"                    
@@ -827,7 +950,10 @@ start your simulation.")
         for ext in file_ext:
             g_name2 = field_path+"\\\\"+field_name+"."+ext
             table_name = ext.lower()+"_"+lcrop
+           
+            print(g_name2, table_name)
             missingRec += checkNaNInOutputFile(table_name,g_name2)
+            print(missingRec)
 
         if lcrop != "fallow":
             missingRec += checkNaNInOutputFile("plantStress_"+lcrop,field_path+"\\\\plantstress.crp")
@@ -839,6 +965,7 @@ start your simulation.")
             self.simStatus.setText("<b>Something went wrong with this run.  The details are shown below.  We are unable to store results of this run until the problem can be resolved.  Additional details shown below.  The following file/columns displayed NaN values:</b><br>"+missingRec)
         else:
             # Ingesting table  into cropOutput database
+            
             self.simStatus.setText("<b>Ingesting output files in the database.</b>")
             self.simStatus.repaint()
             for ext in file_ext:
@@ -849,8 +976,8 @@ start your simulation.")
                 if ext == 'G03' or ext == 'g03':
                     ingestGeometryFile(field_path+"\\\\"+field_name+".grd",g_name2,str(simulation_name[0]))
                 ingestOutputFile(table_name,g_name2,str(simulation_name[0]))
-                if remOutputFilesFlag:
-                    os.remove(g_name)
+         #       if remOutputFilesFlag:
+         #          os.remove(g_name)
 
             ingestOutputFile("plantStress_"+lcrop,field_path+"\\\\plantstress.crp",str(simulation_name[0]))
             if remOutputFilesFlag:
@@ -862,10 +989,20 @@ start your simulation.")
                     os.remove(field_path+"\\\\nitrogen.crp")
  
             self.rotationsig.emit(int(simulation_name[0])) #emitting the simulation id (integer)
-            self.simStatus.setText("<b>Check your simulation results on Output tab.</b>")
+        #    print("BBBBBBB")
+         #   print(simulation_name[0])
+            self.exsystemsig.emit(int(simulation_name[0]))
+            
+          #  print("ExpertSystem: ", self.ExpSys)
+            if self.ExpSys.isChecked():
+                self.simStatus.setText("<b>Check your simulation results on Expert System tab.</b>")
+             #   print("Season: ", linSeaDate)
+            else:
+                self.simStatus.setText("<b>Check your simulation results on Output tab.</b>")
+
         self.simStatus.repaint()
         #end of prepare_and_execute
-
+    
 
     def WriteIni(self,irow,field_name,field_path,lstartyear,lendyear,waterStressFlag,nitroStressFlag):
         '''
@@ -881,7 +1018,7 @@ start your simulation.")
         rowSpacing = 75
         SowingDate=0
         HarvestDate=0
-        EndDate=0
+      #  EndDate=0
         cultivar = "fallow"
 
         #get management tree                    
@@ -897,6 +1034,10 @@ start your simulation.")
         exid = read_experimentDB_id(cropname,experiment)
         tid = read_treatmentDB_id(exid,treatmentname)
         operationList = read_operationsDB_id(tid) #gets all the operations
+
+        if self.ExpSys.isChecked():
+            inseason_date_obj = datetime.strptime(self.inseason_date, '%Y-%m-%d')           
+            formatted_inseason_date = inseason_date_obj.strftime('%m/%d/%Y') 
 
         for ii,jj in enumerate(operationList):
             if jj[1] == 'Simulation Start':
@@ -927,11 +1068,14 @@ start your simulation.")
             if jj[1] == 'Harvest':                            
                 HarvestDate=jj[2] #month/day/year
 
-            if jj[1] == 'Simulation End':                            
-                EndDate=jj[2] #month/day/year
-                # End date should be greater than sowing date
-                if cropname == "fallow":
-                    EndDate = (pd.to_datetime(jj[2]) + pd.DateOffset(days=365)).strftime('%m/%d/%Y')
+            if jj[1] == 'Simulation End':   
+                if self.ExpSys.isChecked():
+                    EndDate = formatted_inseason_date #self.inseason_date # "08/02/2014"
+                else:
+                    EndDate=jj[2] #month/day/year
+                    # End date should be greater than sowing date
+                    if cropname == "fallow":
+                        EndDate = (pd.to_datetime(jj[2]) + pd.DateOffset(days=365)).strftime('%m/%d/%Y')
             
         site = self.tablebasket.cellWidget(irow,0).currentText()
         soil = self.tablebasket.cellWidget(irow,1).currentText()
@@ -1038,7 +1182,7 @@ start your simulation.")
                 fout<<'%-14d%-14d%-14d\n' %(record_tuple[6],record_tuple[7],record_tuple[8])
 
             fout<<" Bottom depth   Init Type  OM (%/100)   Humus_C    Humus_N    Litter_C    Litter_N    Manure_C    Manure_N  no3(ppm)  NH4  \
-                   hNew  Tmpr     CO2     O2    Sand     Silt    Clay     BD     TH33     TH1500  thr ths tha th  Alfa    n   Ks  Kk  thk\n"
+                   hNew  Tmpr     CO2     O2   N2O  Sand     Silt    Clay     BD     TH33     TH1500  thr ths tha th  Alfa    n   Ks  Kk  thk\n"
             fout<<" cm         w/m       Frac      ppm    ppm    ppm    ppm   ppm    ppm   ppm     ppm   cm     0C     ppm   ppm  ----  fraction---     \
                    g/cm3    cm3/cm3   cm3/cm3\n"
             print("soilname=",soilname)
@@ -1050,9 +1194,9 @@ start your simulation.")
                     initType = "'m'"
                 else:
                     initType = "'w'"
-                fout<<'%-14d%-6s%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
+                fout<<'%-14d%-6s%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
                        %-14.3f%-14.3f%-14.3f%-14.3f%-14.3f' %(record_tuple[0],initType,record_tuple[2],-1,-1,0,0,0,0,record_tuple[3], record_tuple[4],record_tuple[5],record_tuple[6],
-                       record_tuple[22],record_tuple[23],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],record_tuple[12],record_tuple[13],
+                       record_tuple[22],record_tuple[23],record_tuple[24],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],record_tuple[12],record_tuple[13],
                        record_tuple[14],record_tuple[15],record_tuple[16],record_tuple[17],record_tuple[18],record_tuple[19],record_tuple[20],record_tuple[21])<<"\n"
         fout<<"\n"
         fh.close()
@@ -1061,6 +1205,7 @@ start your simulation.")
     def refresh(self):
         sitelists = read_sitedetailsDB()
         self.soillists = read_soilDB()
+        self.ExpSys.setChecked(False)
         for irow in range(0,self.tablebasket.rowCount()):
             lsitename = self.tablebasket.cellWidget(irow,0).currentText()
             self.siteCombo = QComboBox()
@@ -1125,3 +1270,61 @@ start your simulation.")
                 self.expTreatCombo.setCurrentIndex(0)
             self.expTreatCombo.currentIndexChanged.connect(self.showtreatmentyear)
             self.tablebasket.setCellWidget(irow,5,self.expTreatCombo)
+
+
+    def SelectInSeaDate(self, state) :#, treatmentname, experimentname ,cropname):
+  
+        if state == 2:
+            result = self.ExpSysshowDialogcontinue()
+
+            self.inseason_date = result
+            print("self_inseasonadate: ", self.inseason_date)
+            conn, c = openDB('crop.db')
+            if c:
+                c.execute("insert into inSeaIrri (inSeaDate, inSea_irrAmt) values (?, ?)" ,[str(self.inseason_date), 0])
+            conn.commit()
+            conn.close()
+        
+       
+            
+    
+    def ExpSysshowDialogcontinue(self,):
+        for irow in range(0,self.tablebasket.rowCount()):
+             
+                lcrop = self.tablebasket.cellWidget(irow,4).currentText()
+                lexperiment = self.tablebasket.cellWidget(irow,5).currentText().split('/')[0]
+                ltreatment = self.tablebasket.cellWidget(irow,5).currentText().split('/')[1]
+
+              #  print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+              #  print(lcrop, lexperiment, ltreatment)
+                record_tuple = (lcrop, lexperiment, ltreatment)
+
+                firstoperation_date = getme_date_of_first_operationDB(ltreatment, lexperiment, lcrop)
+                firstoperation_date_parts = firstoperation_date[0].split("/")
+                print(firstoperation_date_parts)
+                date = QDate(int(firstoperation_date_parts[2]),int(firstoperation_date_parts[0]),int(firstoperation_date_parts[1]))
+      
+                if ltreatment != "Select from list":
+
+                    msg = QMessageBox()
+
+                    calendar = QCalendarWidget(self)
+                 
+                    calendar.setSelectedDate(date)
+                    msg.layout().addWidget(calendar)
+                    msg.exec()
+                
+
+                    selected_date = calendar.selectedDate().toString("yyyy-MM-dd")
+                  #  print(selected_date)
+        return selected_date
+                  
+
+
+                
+
+
+                  
+        
+ 
+           

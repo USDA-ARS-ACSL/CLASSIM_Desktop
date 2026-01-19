@@ -1,2 +1,0 @@
-pyinstaller -y ^
- classim.spec

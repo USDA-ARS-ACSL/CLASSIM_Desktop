@@ -31,12 +31,12 @@ VSVersionInfo(
         u'040904b0',
         [StringStruct(u'CompanyName', u'USDA-ARS-ACSL'),
         StringStruct(u'FileDescription', u'Interface'),
-        StringStruct(u'FileVersion', u'2.3.0.5'),
+        StringStruct(u'FileVersion', u'2.4.0.3'),
         StringStruct(u'InternalName', u'CLASSIM'),
         StringStruct(u'LegalCopyright', u'Tax dollar supported'),
         StringStruct(u'OriginalFilename', u'Classim'),
         StringStruct(u'ProductName', u'CLASSIM'),
-        StringStruct(u'ProductVersion', u'2.3.0.5')])
+        StringStruct(u'ProductVersion', u'2.4.0.3')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]

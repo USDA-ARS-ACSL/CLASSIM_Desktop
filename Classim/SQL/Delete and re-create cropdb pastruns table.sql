@@ -18,5 +18,12 @@ CREATE TABLE "pastruns" (
 	"CO2Var"	INTEGER DEFAULT 0,
     PRIMARY KEY("id" AUTOINCREMENT)
 );
+DROP TABLE IF EXISTS "InseaIrri";
+CREATE TABLE "inSeaIrri" (
+	"ID"	INTEGER,
+	"inSeaDate"	TEXT,
+	"inSea_irrAmt"	INTEGER,
+	PRIMARY KEY("ID")
+);
 
 COMMIT;

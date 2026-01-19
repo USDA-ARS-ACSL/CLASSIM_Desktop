@@ -50,7 +50,7 @@ button to create copies of the treatment information so you do not need to fill 
         self.tab_summary.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding) # horizontal, vertical
         self.tab_summary.setFrameShape(QtWidgets.QFrame.NoFrame)
 
-        urlLink="<a href=\"https://www.ars.usda.gov/northeast-area/beltsville-md-barc/beltsville-agricultural-research-center/adaptive-cropping-systems-laboratory/\">Click here \
+        urlLink="<a href=\"https://youtu.be/LoTh4D1zmwI\">Click here \
                 to watch the Management Tab Video Tutorial</a><br>"
         self.managementVidlabel=QLabel()
         self.managementVidlabel.setOpenExternalLinks(True)

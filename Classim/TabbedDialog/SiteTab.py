@@ -1,4 +1,4 @@
-from asyncio.windows_events import NULL
+#from asyncio.windows_events import NONE
 import os
 import sys
 from PyQt5.QtWidgets import QWidget, QLabel, QComboBox, QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QCheckBox, QGridLayout, QHeaderView
@@ -75,10 +75,13 @@ class SiteWidget(QWidget):
 
         # Setting the map with pyqtlet
         self.map = L.map(self.MapWidget)
-        self.marker = NULL
+        self.marker = None
         self.map.setView([39.8283,-103.8233],5)
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(self.map)
         self.map.clicked.connect(lambda x:self.updateMap(x))
+
+        
+
 
         self.rlatlabel = QLabel("Latitude (deg)")
         self.rlatedit = QLineEdit("")
@@ -120,8 +123,8 @@ class SiteWidget(QWidget):
         self.savebutton.setVisible(False)       
         self.deletebutton.setVisible(False)        
         self.setLayout(self.mainlayout) 
-
-
+    
+    
     def showsitedetails(self,value):
         '''
         Prepare view for SITE related information.

@@ -1,4 +1,5 @@
 import matplotlib
+#matplotlib.use('TkAgg') #backend
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -17,7 +18,7 @@ from DatabaseSys.Databasesupport import *
 from Models.cropdata import *
 from TabbedDialog.tableWithSignalSlot import *
 from CustomTool.genDictOutput import *
-matplotlib.use('TkAgg') #backend
+#
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from pandas.plotting import register_matplotlib_converters
@@ -85,7 +86,7 @@ class RotOutput_Widget(QWidget):
         self.helpcheckbox.stateChanged.connect(self.controlfaq)
         self.faqtree.setVisible(False)
 
-        urlLink="<a href=\"https://www.ars.usda.gov/northeast-area/beltsville-md-barc/beltsville-agricultural-research-center/adaptive-cropping-systems-laboratory/\">Click here \
+        urlLink="<a href=\"https://youtu.be/NahJuss_hlA\">Click here \
                 to watch the Rotation Output Tab Video Tutorial</a><br>"
         self.rotationoutVidlabel=QLabel()
         self.rotationoutVidlabel.setOpenExternalLinks(True)
@@ -562,9 +563,12 @@ class RotOutput_Widget(QWidget):
 
         data_df_mid = pd.DataFrame([])
         for runNum in range(len(self.simIDArr)):
-            print(runNum)
+          #  print(runNum)
             t5 = pd.DataFrame([])
             self.g05Tablename = "g05_" + self.cropArr[runNum]
+            exid = read_experimentDB_id(self.cropArr[runNum],self.expArr[runNum])
+            tid = read_treatmentDB_id(exid,self.treatArr[runNum])
+            plantDensity = getPlantDensity(tid)
             t5 = extract_cropOutputData(self.g05Tablename,self.simIDArr[runNum])
 
             tableID = self.g05Tablename + "_id"
@@ -592,7 +596,7 @@ class RotOutput_Widget(QWidget):
                 print('Data is neither hourly nor daily')
        
             daily_data.columns.values[0] = 'Date'
-            print(daily_data)
+           # print(daily_data)
 
             o_t_exid = getTreatmentID(self.treatArr[runNum],self.expArr[runNum],self.cropArr[runNum]) 
             t5_Irrig = getIrrigationData(self.simIDArr[runNum],o_t_exid)
@@ -604,7 +608,7 @@ class RotOutput_Widget(QWidget):
                 new_date_str = date_obj.strftime("%Y-%m-%d")
                 new_dates.append(new_date_str)
             Irrig_df['Date'] = new_dates
-            print(Irrig_df)
+           # print(Irrig_df)
 
             daily_data.loc[daily_data['Date'].isin(Irrig_df['Date']), 'TotIrrig'] = Irrig_df['AmtIrrAppl'].values      
 
@@ -844,7 +848,7 @@ class RotOutput_Widget(QWidget):
                     IrrigationDateList.append(jj[2])       
                     irrInfo = readOpDetails(jj[0],jj[1])
                     for j in range(len(irrInfo)):
-                        if irrInfo[j][3] == "Sprinkler":
+                        if irrInfo[j][2] == "Sprinkler":
                             totalirrAppl = totalirrAppl + irrInfo[j][4]
 
                 if jj[1] == 'Simulation End':                            
@@ -855,10 +859,14 @@ class RotOutput_Widget(QWidget):
             if len(FertilizerDateList) >= 1:
                 FertilizerDate = ", "
                 FertilizerDate = FertilizerDate.join(FertilizerDateList) 
+                
+            FertilizerDateList.sort(key=lambda FertilizerDateList: datetime.strptime(FertilizerDateList, '%m/%d/%Y'))
 
             if len(IrrigationDateList) >= 1:
                 IrrigationDate = ", "
                 IrrigationDate = IrrigationDate.join(IrrigationDateList) 
+                
+            IrrigationDateList.sort(key=lambda IrrigationDateList: datetime.strptime(IrrigationDateList, '%m/%d/%Y'))
 
             self.simSummaryDates = "<i>Simulation Dates </i>"
             self.simSummaryDates += "<br><i>Start Date: </i>" + BeginDate
@@ -929,7 +937,7 @@ class RotOutput_Widget(QWidget):
                         self.simSummaryAgroData = "<i>Simulation Agronomic Data at <br>" + HarvestDate + " (harvest date)</i>"
                     self.simSummaryAgroData += "<br><i>Yield: </i>" + '{:3.2f}'.format(agroDataTuple[0]*plantDensity*10) + " kg/ha"
                     self.simSummaryAgroData += "<br><i>Total biomass: </i>" + '{:3.2f}'.format(agroDataTuple[1]*plantDensity*10) + " kg/ha"
-                    self.simSummaryAgroData += "<br><i>Nitrogen Uptake: </i>" +  '{:3.2f}'.format(agroDataTuple[2]/10) + " kg/ha"
+                    self.simSummaryAgroData += "<br><i>Nitrogen Uptake: </i>" +  '{:3.2f}'.format(agroDataTuple[2]*plantDensity*10) + " kg/ha"
                 elif self.cropArr[runNum] == "cotton":
                     yieldDataTuple = getCottonAgronomicData(self.simIDArr[runNum])
                     yieldDate = dt.strptime(yieldDataTuple[0], '%Y-%m-%d %H:%M:%S').strftime('%m/%d/%Y %H:%M')
@@ -1208,21 +1216,27 @@ class RotOutput_Widget(QWidget):
         self.totWaterLayerPlot.clear()
         self.totWaterLayerPlot.setLabel("bottom", "Date")
         self.totWaterLayerPlot.showGrid(x=True, y=True)
+        
+        #Initialize totWaterLayerPlot
+        self.totWaterLayerPlotLegend = self.totWaterLayerPlot.addLegend()
         try:
             self.totWaterLayerPlotLegend.scene().removeItem(self.totWaterLayerPlotLegend)
         except Exception as e:
             print(e)
-        self.totWaterLayerPlotLegend = self.totWaterLayerPlot.addLegend()
+        
 
         # Set water content by layer plot legend and x-axis label
         self.waterContentLayerPlot.clear()
         self.waterContentLayerPlot.setLabel("bottom", "Date")
         self.waterContentLayerPlot.showGrid(x=True, y=True)
+        
+        #Initialize waterContentLayerPlot
+        self.waterContentLayerPlotLegend = self.waterContentLayerPlot.addLegend()
         try:
             self.waterContentLayerPlotLegend.scene().removeItem(self.waterContentLayerPlotLegend)
         except Exception as e:
             print(e)
-        self.waterContentLayerPlotLegend = self.waterContentLayerPlot.addLegend()
+        
 
         # Set NNO3 concentration for profile plot x-axis label
         self.NNO3ConcProfilePlot.clear()
@@ -1233,21 +1247,27 @@ class RotOutput_Widget(QWidget):
         self.NNO3ConcLayerPlot.clear()
         self.NNO3ConcLayerPlot.setLabel("bottom", "Date")
         self.NNO3ConcLayerPlot.showGrid(x=True, y=True)
+        
+        # Initialize NNO3ConcLayerPlot
+        self.NNO3ConcLayerPlotLegend = self.NNO3ConcLayerPlot.addLegend()
         try:
             self.NNO3ConcLayerPlotLegend.scene().removeItem(self.NNO3ConcLayerPlotLegend)
         except Exception as e:
             print(e)
-        self.NNO3ConcLayerPlotLegend = self.NNO3ConcLayerPlot.addLegend()
+        
 
         # Set Temp plot legend and x-axis label
         self.tempPlot.clear()
         self.tempPlot.setLabel("bottom", "Date")
         self.tempPlot.showGrid(x=True, y=True)
+        
+        #Initialize tempPlot
+        self.tempPlotLegend = self.tempPlot.addLegend()
         try:
             self.tempPlotLegend.scene().removeItem(self.tempPlotLegend)
         except Exception as e:
             print(e)
-        self.tempPlotLegend = self.tempPlot.addLegend()
+        
 
         pen = pg.mkPen('r', width=3)
 

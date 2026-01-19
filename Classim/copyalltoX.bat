@@ -1,1 +1,0 @@
-robocopy .\dist\classim "X:\Modeling\MAIZSIMInterface\Interface programs and files\Executable for CLASSIM program\classim" /E /PURGE

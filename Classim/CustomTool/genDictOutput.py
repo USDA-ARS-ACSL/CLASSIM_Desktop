@@ -35,8 +35,8 @@ def genDictOutput(cropArr,tabName,rotFlag):
                           'PFD':'Photosynthetic photon flux density (crop) (mol photons/day/m2)','SolRad':'Solar radiation (crop) (W/m2)',
                           'SoilT':'Soil temperature at soil surface (crop) (oC)','Tair':'Air temperture at 2m (crop) (oC)',
                           'Tcan':'Canopy temperature (crop) (oC)','ETdmd':'Potential Transpiration (crop) (g/plant)',
-                          'ETsply':'Actual Transpiration (crop) (g/plant)','Pn':'Net Photosynthesis (crop) (g carbon/plant/day)',
-                          'Pg':'Gross photosynthesis (crop) (g carbon/plant/day)','Respir':'Respiration (crop) (g carbon/plant/day)',
+                          'ETsply':'Actual Transpiration (crop) (g/plant)','Pn':'Net Photosynthesis (crop) (g carbohydrate/plant/day)',
+                          'Pg':'Gross photosynthesis (crop) (g carbohydrate/plant/day)','Respir':'Respiration (crop) (g carbohydrate/plant/day)',
                           'av_gs':'Average stomatal conductance (crop) (micro-mol/m2/s)','VPD':'Vapor pressure deficit (crop) (kPa)',
                           'Nitr':'grams nitrogen per m2 leaf (crop) (g/m2)','N_Dem':'Nitrogen demand (crop) (g/plant)',
                           'NUpt':'Nitrogen uptake (crop) (g/plant)','LeafN':'Leaf nitrogen content (crop) (%)',
@@ -50,7 +50,7 @@ def genDictOutput(cropArr,tabName,rotFlag):
                       'RH':'mean','LeafWP':'mean','PFD':'sum','SolRad':'mean','SoilT':'mean','Tair':'mean',
                       'Tcan':'mean','ETdmd':'sum','ETsply':'sum','Pn':'sum','Pg':'sum','Respir':'sum',
                       'av_gs':'mean','VPD':'mean','Nitr':'max','N_Dem':'max','NUpt':'max','LeafN':'max',
-                      'PCRL':'max','totalDM':'max','shootDM':'max','earDM':'max','TotLeafDM':'max','DrpLfDM':'max',
+                      'PCRL':'sum','totalDM':'max','shootDM':'max','earDM':'max','TotLeafDM':'max','DrpLfDM':'max',
                       'stemDM':'max','rootDM':'max','SoilRt':'max','MxRtDep':'max','AvailW':'max','solubleC':'max'}
 
     # Potato
@@ -64,9 +64,9 @@ def genDictOutput(cropArr,tabName,rotFlag):
                       'stem_N':'Stem nitrogen (crop)','root_N':'Root nitrogen (crop)','tuber_N':'Tuber nitrogen (crop)'}
     varDescUnitPotDict = {'LAI':'Leaf area index (crop)','PFD':'Photosynthetic photon flux density (crop) (mol photons/day/m2)',
                           'SolRad':'Solar radiation (crop) (W/m2)','Tair':'Air temperture at 2m (crop) (oC)',
-                          'Tcan':'Canopy temperature (crop) (oC)','Pgross':'Gross photosynthesis (crop) (g carbon/plant/day)',
-                          'Rg+Rm':'Respiration (crop) (g carbon/plant/day)','Tr-Pot':'Potential transpiration (crop) (mg/plant)',
-                          'Tr-Act':'Actual transpiration (crop) (mg/plant)','Stage':'Stage (crop)',
+                          'Tcan':'Canopy temperature (crop) (oC)','Pgross':'Gross photosynthesis (crop) (g carbohydrate/plant/day)',
+                          'Rg+Rm':'Respiration (crop) (g carbohydrate/plant/day)','Tr-Pot':'Potential transpiration (crop) (g/plant)',
+                          'Tr-Act':'Actual transpiration (crop) (g/plant)','Stage':'Stage (crop)',
                           'totalDM':'Total dry matter (crop) (g/plant)','leafDM':'Leaf dry matter (crop) (g/plant)',
                           'stemDM':'Stem dry matter (crop) (g/plant)','rootDM':'Root dry matter (crop) (g/plant)',
                           'tuberDM':'Tuber dry matter (crop) (g/plant)','deadDM':'Dead dry matter (crop) (g/plant)',

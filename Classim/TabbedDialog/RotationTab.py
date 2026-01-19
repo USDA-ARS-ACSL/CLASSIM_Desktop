@@ -25,19 +25,19 @@ runDir = os.path.join(classimDir,'run')
 storeDir = os.path.join(runDir,'store')
 
 # Create soil executable
-createsoilexe = classimDir+'\\createsoilfiles.exe'
+createsoilexe = os.path.join(classimDir, 'createsoilfiles.exe')
 
 # maize model executables
-maizsimexe = classimDir+'\\2dmaizsim.exe'
+maizsimexe =  os.path.join(classimDir,'2dmaizsim.exe')
 
 # Potato model executable
-spudsimexe = classimDir+'\\2dspudsim.exe'
+spudsimexe =  os.path.join(classimDir, '2dspudsim.exe')
 
 # Soybean model executable
-glycimexe = classimDir+'\\2dglycim.exe'
+glycimexe =  os.path.join(classimDir, '2dglycim.exe')
 
 # Cotton model executable
-gossymexe = classimDir+'\\2dgossym.exe'
+gossymexe =  os.path.join(classimDir, '2dgossym.exe')
 
 # Flag to tell script if output files should be removed, the default is 1 so they are removed
 remOutputFilesFlag = 1
@@ -83,7 +83,7 @@ make sure to press the Execute Rotation button.")
         self.helpcheckbox.setChecked(False)
         self.helpcheckbox.stateChanged.connect(self.controlfaq)
 
-        urlLink="<a href=\"https://www.ars.usda.gov/northeast-area/beltsville-md-barc/beltsville-agricultural-research-center/adaptive-cropping-systems-laboratory/\">Click here \
+        urlLink="<a href=\"https://youtu.be/wOC70sNX9tw\">Click here \
                 to watch the Rotation Builder Tab Video Tutorial</a><br>"
         self.rotationVidlabel=QLabel()
         self.rotationVidlabel.setOpenExternalLinks(True)
@@ -689,7 +689,7 @@ make sure to press the Execute Rotation button.")
         lCO2Var = self.tablebasket.cellWidget(irow,8).currentText()
 
         src_file = storeDir+'\\Water.DAT'
-        dest_file = field_path+'\\Water.DAT'
+        dest_file = field_path+'\\WatMovParam.DAT'
         
         copyFile(src_file,dest_file)
 
@@ -707,7 +707,7 @@ make sure to press the Execute Rotation button.")
 
         #copy waterBound.dat file from store to runDir
         src_file= storeDir+'\\WaterBound.DAT'
-        dest_file= field_path+'\\WatMovParam.dat'
+        dest_file= field_path+'\\Water.dat'
         copyFile(src_file,dest_file)
 
         WriteBiologydefault(field_name,field_path)
@@ -722,7 +722,8 @@ make sure to press the Execute Rotation button.")
             dest_file= field_path+'\\fallow.var'
             copyFile(src_file,dest_file)
         WriteDripIrrigationFile(field_name,field_path)
-        hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var)
+        linSeaDate = None
+        hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var,linSeaDate)
         WriteSoluteFile(lsoilname,field_path)
         WriteGasFile(field_path)
         hourlyFlag = 1 if self.step_hourly.isChecked() else 0
@@ -734,7 +735,7 @@ make sure to press the Execute Rotation button.")
         irrType = irrigationInfo(lcrop,lexperiment,ltreatmentname)
         WriteMulchGeo(field_path,surfResType)  
         o_t_exid = getTreatmentID(ltreatmentname,lexperiment,lcrop)
-        WriteIrrigation(field_name,field_path,irrType, simulation_name,o_t_exid)
+        WriteIrrigation(field_name,field_path,simulation_name,o_t_exid)
         WriteRunFile(lcrop,lsoilname,field_name,cultivar,field_path,lstationtype)            
         src_file= field_path+"\\"+field_name+".lyr"                    
         layerdest_file= field_path+"\\"+field_name+".lyr"
@@ -797,7 +798,7 @@ make sure to press the Execute Rotation button.")
 
         if missingRec != "":
             self.simStatus.setText("<b>Something went wrong with this run for management " + ltreatmentname + " (" + lcrop + ").  The details are shown below.  We are unable to store results of this run until the problem can be resolved.  Additional details shown below.  The following file/columns displayed NaN values:</b><br>"+missingRec)
-            delete_pastrunsDB_rotationID(rotationID,run_dir,lcrop)
+            delete_pastrunsDB_rotationID(rotationID,lcrop)
             self.rotationUpSig.emit(int(rotationID)) #emitting the simulation id (integer)
         else:
             # Ingesting table  into cropOutput database
@@ -1001,8 +1002,8 @@ make sure to press the Execute Rotation button.")
                 fout<<'%-14d%-14d%-14d\n' %(record_tuple[6],record_tuple[7],record_tuple[8])
 
             fout<<" Bottom depth   Init Type  OM (%/100)   Humus_C    Humus_N    Litter_C    Litter_N    Manure_C    Manure_N  no3(ppm)  NH4  \
-                   initial water   Tmpr     CO2     O2    Sand     Silt    Clay     BD     TH33     TH1500  thr ths tha th  Alfa    n   Ks  Kk  thk\n"
-            fout<<" cm         w/m       Frac      ppm    ppm    ppm    ppm   ppm    ppm   ppm     ppm   cm     0C     ppm   ppm  ----  fraction---     \
+                   initial water   Tmpr     CO2     O2   N2O  Sand     Silt    Clay     BD     TH33     TH1500  thr ths tha th  Alfa    n   Ks  Kk  thk\n"
+            fout<<" cm         w/m       Frac      ppm    ppm ppm    ppm    ppm   ppm    ppm   ppm     ppm   cm     0C     ppm   ppm  ----  fraction---     \
                    g/cm3    cm3/cm3   cm3/cm3\n"
             soilgrid_list = read_soilshortDB(soilname)
 
@@ -1097,9 +1098,9 @@ make sure to press the Execute Rotation button.")
                     dfG03['NO3N_theta_w']= dfG03['NO3N_theta']*dfG03['Area']  # result is total ug NO3 in the node
                     #NNH4 is not dissolved in water so we use soil mass
                     dfG03['NH4N_w'] = dfG03['NH4N']*dfG03['soilMass'] # this should give total ug of NH4 in the node
-
+                                                                  
                     dfG07['Humus_C_w'] = dfG07['Humus_C']*dfG03['soilMass'] # this should give total ug of Humus_C  in the node
-                                                                            # humus components are output as ug/g of soil in 2dsoil
+                                                                             # humus components are output as ug/g of soil in 2dsoil
                     dfG07['Humus_N_w'] = dfG07['Humus_N']*dfG03['soilMass']  # this should give total ug of Humus_N  in the node
                     dfG07['Litter_C_w'] = dfG07['Litter_C']*dfG03['soilMass'] # this should give total ug of Litter_C  in the node
                     dfG07['Litter_N_w'] = dfG07['Litter_N']*dfG03['soilMass'] # this should give total ug of Litter_N  in the node
@@ -1131,7 +1132,7 @@ make sure to press the Execute Rotation button.")
                     Manure_N_layer = dfG07['Manure_N_w_sum']/dfG03['soilMass_sum']
                     Root_C_layer = dfG07['Root_C_w_sum']/dfG03['soilMass_sum']
                     Root_N_layer = dfG07['Root_N_w_sum']/dfG03['soilMass_sum']
-
+                    
                     OM_layer =  (Humus_C_layer+Root_C_layer)/percentC+Humus_N_layer+Root_N_layer   # total ug of soil OM components
                     # 1% OM is .01 g OM/g soil = 10 mg OM/g= 10,000 ug/g
                     # in 2dsoil OM is input as a fraction or %100 
@@ -1142,15 +1143,15 @@ make sure to press the Execute Rotation button.")
                     NO3_layer = dfG03['NO3N_theta_w_sum']/dfG03['soilMass_sum']  #result is mg NO3/g soil
                     NH4_layer = dfG03['NH4N_w_sum']/dfG03['soilMass_sum']   # result is mg NH4/g soil
 
-                    fout<<'%-14d%-6s%-14.5f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
+                    fout<<'%-14d%-6s%-14.5f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
                            %-14.3f%-14.3f%-14.3f%-14.3f%-14.3f' %(record_tuple[0],initType,dfG07['OM'],Humus_C_layer,Humus_N_layer,Litter_C_layer,Litter_N_layer,Manure_C_layer,Manure_N_layer,
-                           NO3_layer,NH4_layer,dfG03['thNew_mean'],dfG03['Temp_mean'],record_tuple[22],record_tuple[23],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],
+                           NO3_layer,NH4_layer,dfG03['thNew_mean'],dfG03['Temp_mean'],record_tuple[22],record_tuple[23],record_tuple[24],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],
                            record_tuple[12],record_tuple[13],record_tuple[14],record_tuple[15],record_tuple[16],record_tuple[17],record_tuple[18],record_tuple[19],record_tuple[20],
                            record_tuple[21])<<"\n"
                 else:
-                    fout<<'%-14d%-6s%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
+                    fout<<'%-14d%-6s%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
                            %-14.3f%-14.3f%-14.3f%-14.3f%-14.3f' %(record_tuple[0],initType,record_tuple[2],-1,-1,0,0,0,0,record_tuple[3],record_tuple[4],record_tuple[5],record_tuple[6],
-                           record_tuple[22],record_tuple[23],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],record_tuple[12],record_tuple[13],
+                           record_tuple[22],record_tuple[23],record_tuple[24],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],record_tuple[12],record_tuple[13],
                            record_tuple[14],record_tuple[15],record_tuple[16],record_tuple[17],record_tuple[18],record_tuple[19],record_tuple[20],record_tuple[21])<<"\n"
                 layer = layer + 1
         fout<<"\n"

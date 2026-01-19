@@ -42,7 +42,7 @@ def getClassimVersion():
     if c:
         c.execute("select version from classimVersion where id= (select max(id) from classimVersion)")
         c_row = c.fetchone()
-        print(c_row[0])
+     #   print(c_row[0])
         if c_row != None:        
             rlist=c_row[0]
         conn.close()
@@ -106,7 +106,9 @@ def extract_sitedetails(site_string):
         c1_row = c1.fetchall()
         if c1_row != None:
             for c1_row_record in c1_row:
-                result1 = (c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3])
+                 result1 = (c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3])
+      #  result1 = [(c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3]) for c1_row_record in c1_row if c1_row != None]
+     #   print(result1)
         conn.close()    
         
     return result1
@@ -124,12 +126,13 @@ def read_cropDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT id, cropname FROM crops order by lower(cropname)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                name = c1rowrecord[1]
-                rlist.append(name)
-              
+      #  if c1row != None:
+      #      for c1rowrecord in c1row:
+        id = [c1rowrecord[0] for c1rowrecord in c1row if c1row != None][0]
+       # name = c1rowrecord[1] 
+       # rlist.append(name)
+        rlist = [c1rowrecord[1] for c1rowrecord in c1row if c1row != None]
+                    
         conn.close()
         return rlist
 
@@ -158,8 +161,9 @@ def read_cultivar_DB(cropname):
                 c1=c.execute("SELECT hybridname FROM cultivar_cotton order by lower(hybridname)")
 
             c1_rows = c1.fetchall()
-            for c1_row in c1_rows:        
-                rlist.append(c1_row[0])
+          #  for c1_row in c1_rows:        
+          #      rlist.append(c1_row[0])
+            rlist = [c1_row[0] for c1_row in c1_rows]
             
         conn.close()
         return rlist
@@ -177,11 +181,12 @@ def read_tillageTypeDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT id, tillage FROM tillageType order by lower(tillage)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                tillage = c1rowrecord[1]
-                rlist.append(tillage)
+        rlist = [c1rowrecord[1] for c1rowrecord in c1row if c1row != None]
+     #   if c1row != None:
+      #      for c1rowrecord in c1row:
+      #          id = c1rowrecord[0]
+      #          tillage = c1rowrecord[1]
+      #          rlist.append(tillage)
               
         conn.close()
         return rlist
@@ -199,12 +204,12 @@ def read_PGRChemicalDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT id, PGRChemical FROM PGRChemical order by lower(PGRChemical)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                PGRChemical = c1rowrecord[1]
-                rlist.append(PGRChemical)
-              
+       # if c1row != None:
+       #     for c1rowrecord in c1row:
+       #         id = c1rowrecord[0]
+       #         PGRChemical = c1rowrecord[1]
+       #         rlist.append(PGRChemical)
+        rlist = [c1rowrecord[1] for c1rowrecord in c1row if c1row != None]       
         conn.close()
         return rlist
 
@@ -221,12 +226,12 @@ def read_PGRAppTypeDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT id, applicationType FROM PGRApplType order by lower(applicationType)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                applicationType = c1rowrecord[1]
-                rlist.append(applicationType)
-              
+      #  if c1row != None:
+       #     for c1rowrecord in c1row:
+       #         id = c1rowrecord[0]
+       #         applicationType = c1rowrecord[1]
+       #         rlist.append(applicationType)
+        rlist =  [c1rowrecord[1] for c1rowrecord in c1row  if c1row != None]   
         conn.close()
         return rlist
 
@@ -243,12 +248,12 @@ def read_PGRAppUnitDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT id, PGRUnit FROM PGRUnit order by lower(PGRUnit)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                PGRUnit = c1rowrecord[1]
-                rlist.append(PGRUnit)
-              
+      #  if c1row != None:
+       #     for c1rowrecord in c1row:
+       #         id = c1rowrecord[0]
+       #         PGRUnit = c1rowrecord[1]
+       #         rlist.append(PGRUnit)
+        rlist =  [c1rowrecord[1] for c1rowrecord in c1row  if c1row != None]        
         conn.close()
         return rlist
 
@@ -265,11 +270,11 @@ def read_SurfResTypeDB():
         #need auto increment ID, nonnull
         c1 = c.execute("select residueType from surfResType order by lower(residueType)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                surfResType = c1rowrecord[0]
-                rlist.append(surfResType)
-              
+      #  if c1row != None:
+      #      for c1rowrecord in c1row:
+       #         surfResType = c1rowrecord[0]
+       #         rlist.append(surfResType)
+        rlist =  [c1rowrecord[0]  for c1rowrecord in c1row  if c1row != None]        
         conn.close()
         return rlist
 
@@ -286,11 +291,11 @@ def read_SurfResApplTypeDB():
         #need auto increment ID, nonnull
         c1 = c.execute("select applicationType from surfResApplType order by lower(applicationType)")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                surfResApplType = c1rowrecord[0]
-                rlist.append(surfResApplType)
-              
+       # if c1row != None:
+      #      for c1rowrecord in c1row:
+       #         surfResApplType = c1rowrecord[0]
+       #         rlist.append(surfResApplType)
+        rlist =  [c1rowrecord[0]  for c1rowrecord in c1row  if c1row != None]        
         conn.close()
         return rlist
 
@@ -306,29 +311,48 @@ def read_irrigationType():
     if c:
         c1 = c.execute("SELECT irrigationClass from irrigationClass order by irrigationClass")
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                irrlist.append(c1_row_record[0])
+        irrlist = [c1_row_record[0] for c1_row_record in c1_row  if c1_row != None]  
         conn.close()
         return irrlist
 
-def read_irrigationType():
+def read_irrOption():
     '''
-    List all Irrigation types in the database
+    List all Irrigation options in the database
     Input:
     Output:
-    Irrigation Types.
+    Irrigation Options.
     '''
     irrlist = []
     conn, c =openDB('crop.db')
     if c:
-        c1 = c.execute("SELECT irrigationClass from irrigationClass order by irrigationClass")
+        c1 = c.execute("SELECT irrOption from Irr_Options order by irrOption")
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                irrlist.append(c1_row_record[0])
+        irrlist = [c1_row_record[0] for c1_row_record in c1_row  if c1_row != None] 
         conn.close()
         return irrlist
+
+
+def readSoilWater(simulationname, cropname):
+    '''
+    Returns the soil water content data
+    input:
+        simulationname
+    Output:
+        soil water content
+    '''
+    
+    conn, c = openDB('cropOutput.db')
+    croptable = "g05_" + cropname
+    id = croptable + "_id"
+    
+    if c:
+        query = f"SELECT Date_Time, ThetaAvail FROM {croptable} WHERE {id} = ?"
+  #      query =  "SELECT Date_Time, ThetaAvail FROM g05_maize WHERE  g05_maize_id = ? "
+        param=(simulationname,)
+        df = pd.read_sql_query(query,conn, params = param)
+        conn.close()
+        return df #irrlist
+    
 
 def read_cultivar_DB_detailed(hybridname,cropname):
     '''
@@ -367,7 +391,7 @@ def read_cultivar_DB_detailed(hybridname,cropname):
             if c1_row != None:        
                 rlist=c1_row
 
-        print(rlist)
+      #  print(rlist)
         conn.close()
         return rlist
 
@@ -384,11 +408,12 @@ def read_experimentDB():
         #need auto increment ID, nonnull
         c1 = c.execute("SELECT exid, name FROM experiment order by experiment")  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                id = c1rowrecord[0]
-                name = c1rowrecord[1]
-                rlist.append(name) 
+      #  if c1row != None:
+      #      for c1rowrecord in c1row:
+      #          id = c1rowrecord[0]
+       #         name = c1rowrecord[1]
+       #         rlist.append(name) 
+        rlist = [c1rowrecord[1] for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -407,9 +432,10 @@ def getExpTreatByCrop(cropname):
         #need auto increment ID, nonnull
         c1 = c.execute("select e.name || '/' || t.name as expTreat from experiment e, treatment t where t_exid=exid and e.crop = ? order by lower(e.name), lower(t.name)",[cropname])  
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord[0])
+      #  if c1row != None:
+      #      for c1rowrecord in c1row:
+      #          rlist.append(c1rowrecord[0])
+        rlist = [c1rowrecord[0] for c1rowrecord in c1row if c1row != None]
     conn.close()
     return rlist
 
@@ -484,10 +510,10 @@ def read_operationsDB_id(o_t_exid):
         if isinstance(o_t_exid,int):
             c2 = c.execute("SELECT opID, name, odate FROM operations where o_t_exid = ?", (o_t_exid,))
             c2_row = c2.fetchall()
-            if c2_row != None:
-                for c2_row_record in c2_row:
-                    rlist.append(c2_row_record)
-
+           # if c2_row != None:
+           #     for c2_row_record in c2_row:
+           #         rlist.append(c2_row_record)
+            rlist = [c2_row_record for c2_row_record in c2_row if c2_row != None]
         conn.close()    
         return rlist
 
@@ -510,7 +536,8 @@ def getPlantDensity(o_t_exid):
             if c2_row != None:            
                 rlist= c2_row[0]
 
-        conn.close()    
+        conn.close() 
+     #   print(rlist)
         return rlist
 
 
@@ -675,7 +702,7 @@ def isSiteOnPastruns(site):
             return False
 
 
-def update_pastrunsDB(rotationID,site,managementname,weather,stationtype,soilname,startyear,endyear,waterstress,nitrostress,tempVar,rainVar,CO2Var):     
+def update_pastrunsDB(rotationID,site,managementname,stationtype,weatherID,soilname,startyear,endyear,waterstress,nitrostress,tempVar,rainVar,CO2Var):     
     '''
   Insert a new record on pastrun table and returns the assigned id.
   Input:
@@ -700,13 +727,14 @@ def update_pastrunsDB(rotationID,site,managementname,weather,stationtype,soilnam
     if c:
         odate =  datetime.now()
 
-        record_tuple = (rotationID,site,managementname,weather,soilname,stationtype,startyear,endyear,odate,waterstress,nitrostress,tempVar,rainVar,CO2Var)
+        record_tuple = (rotationID,site,managementname,stationtype,weatherID,soilname,startyear,endyear,odate,waterstress,nitrostress,tempVar,rainVar,CO2Var)
+       # print(record_tuple)
 
-        c.execute("insert into pastruns (rotationID, site, treatment, weather, soil, stationtype, startyear, endyear, odate, waterstress, nitrostress, tempVar, \
+        c.execute("insert into pastruns (rotationID, site, treatment, stationtype, weather, soil, startyear, endyear, odate, waterstress, nitrostress, tempVar, \
                    rainVar, CO2Var) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", record_tuple) 
         conn.commit()
         # retrieve the ID
-        c1row = c.execute("select id from pastruns where rotationID = ? AND site = ? AND treatment = ? AND weather = ? AND soil = ? AND stationtype = ? AND startyear = ? \
+        c1row = c.execute("select id from pastruns where rotationID = ? AND site = ? AND treatment = ? AND stationtype = ? AND weather = ? AND soil = ? AND  startyear = ? \
                            AND endyear = ? AND odate = ? AND waterstress = ? AND nitrostress = ? AND tempVar = ? AND rainVar = ? AND CO2Var = ?",record_tuple)    
         c1_row = c1row.fetchone()
         if c1_row != None:
@@ -740,7 +768,7 @@ def delete_pastrunsDB(id,cropname):
         return True
 
 
-def delete_pastrunsDB_rotationID(rotationID,run_dir,cropname):     
+def delete_pastrunsDB_rotationID(rotationID,cropname):     
     '''
   Delete pastrun.
   Input:
@@ -783,8 +811,9 @@ def extract_pastrunsidDB(id):
     
         c1 = c.execute(query)      
         c1_rows = c1.fetchall()
-        for c1_row in c1_rows:
-            rlist.append(c1_row)
+       # for c1_row in c1_rows:
+     #       rlist.append(c1_row)
+        rlist = [c1_row for c1_row in c1_rows]
         conn.close()
         return rlist
 
@@ -807,6 +836,61 @@ def getNextRotationID():
             rotationID = 1
         return rotationID
 
+def read_simulationID():
+    '''
+    Returns next simulationID
+    Input:
+    Output:
+    simulationID
+    '''
+    conn, c = openDB('crop.db')
+    if c:
+        c1=c.execute("select max(id) from pastruns")
+        c1_row = c1.fetchone()
+        if c1_row[0] != None:        
+            simulationID = c1_row[0] 
+        else:
+            simulationID = 1
+        conn.close()        
+        return simulationID
+
+def read_prevsimulationID():
+    '''
+    Returns next simulationID
+    Input:
+    Output:
+    simulationID
+    '''
+    conn, c = openDB('crop.db')
+    if c:
+        c1=c.execute("select max(id) from pastruns")
+        c1_row = c1.fetchone()
+        if c1_row[0] != None:        
+            simulationID = c1_row[0] - 1
+        else:
+            pass
+        conn.close()        
+        return simulationID
+
+
+def extract_pastrunsExpSys(prevsimulationID):    
+    '''
+  Returns a tuple with last pastrun in the database.
+  Input:
+  Output:
+    Tuple with complete pastruns information.
+    '''
+    rlist = []
+    conn, c = openDB('crop.db')
+    if c:
+        query = 'select id, site, soil, stationtype, weather, treatment, startyear, endyear, waterstress, nitrostress, tempVar, RainVar, CO2Var from pastruns where id = ?'
+        param = (prevsimulationID, )
+        df = pd.read_sql_query(query,conn, params = param)
+      #  print(df['weather'])
+   
+        conn.close()
+    #    print(df)
+        return df
 
 def getTreatmentID(treatmentname, experimentname, cropname):
     '''
@@ -875,35 +959,35 @@ def check_and_update_treatmentDB(treatmentname, experimentname, cropname):
                     fertNut_record = []
                     PGR_record = []
                     SR_record = []
-                    irrAmt_record = []
+                    irr_record = []
 
                     op_id = -10 # This indicates that the record is new
                     new_record = ['Simulation Start',yesterday_date]
                     check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     new_record = ['Tillage','']
                     check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     if(cropname != "fallow" and cropname != "cotton"):
                         new_record = ['Sowing',in5days_date]
                         check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     if(cropname != "fallow"):
                         new_record = ['Harvest',in60days_date]
                         check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     new_record = ['Simulation End',in65days_date]
                     check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     if(cropname != "maize" and cropname != "fallow"):
                         new_record = ['Emergence',in7days_date]
                         check_and_update_operationDB(op_id, treatmentname, experimentname, cropname, new_record, \
-                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record)
+                                                 initCond_record, tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_record)
 
                     conn.commit()
                     conn.close()
@@ -911,6 +995,7 @@ def check_and_update_treatmentDB(treatmentname, experimentname, cropname):
             else: # data exist, so not inserting
                 return False
         return False
+
 
 
 def copy_treatmentDB(treatmentname, experimentname, cropname, newtreatmentname):
@@ -953,6 +1038,8 @@ def copy_treatmentDB(treatmentname, experimentname, cropname, newtreatmentname):
                                    origOp_row[1],origOp_row[2],))
                 nOpID_row = nOpID.fetchone()
                 newOpID = nOpID_row[0]
+           #     print("################################################")
+            #    print(newOpID)
             
                 if(origOp_row[1] == "Simulation Start"):
                     c.execute("insert into initCondOp (opID,pop,autoirrigation,xseed,yseed,cec,eomult,rowSpacing,cultivar,seedpieceMass) \
@@ -974,8 +1061,32 @@ def copy_treatmentDB(treatmentname, experimentname, cropname, newtreatmentname):
                     c.execute("insert into surfResOp (opID,residueType,applicationType,applicationTypeValue) select ?,residueType,applicationType,\
                                applicationTypeValue from surfResOp where opID=?",(newOpID, origOp_row[0],))  
                 elif(origOp_row[1] == "Irrigation"):
-                    c.execute("insert into Irrig_pivotOp (opID,irrigationClass,AmtIrrAppl) select ?,irrigationClass,AmtIrrAppl \
-                    from Irrig_pivotOp where opID=?",(newOpID, origOp_row[0],))  
+                    params = (newOpID, origOp_row[0])
+                   # print("CVCVCVCV")
+                  # print(params)
+                    #c.execute("insert into irrigationDetails (opID,o_t_exid, irrigationClass) select ?, o_t_exid, irrigationClass \
+                   # from irrigationDetails where opID=?",(newOpID, new_t_id, origOp_row[0],)) 
+                    c.execute("INSERT INTO irrigationDetails (opID, o_t_exid, irrigationClass) " "SELECT ?, ?, irrigationClass " \
+                   "FROM irrigationDetails "
+                    "WHERE opID = ?",
+                    (newOpID, new_t_id, origOp_row[0]) )
+ 
+                    # Fetch the irrigationClass values for the given opID
+                    c.execute("SELECT irrigationClass FROM irrigationDetails WHERE opID = ?", (newOpID,))
+                    irrigation_class = c.fetchall()
+                  #  print(irrigation_class)
+                    if irrigation_class[0][0] == 'Sprinkler':
+                        c.execute("insert into Irrig_pivotOp (opID,irrigationClass,AmtIrrAppl) select ?,irrigationClass,AmtIrrAppl \
+                        from Irrig_pivotOp where opID=?",(newOpID, origOp_row[0],))  
+                        
+                    elif irrigation_class[0][0] == "FloodH":
+                        c.execute("insert into Irrig_floodH (opID,irrigationClass,pondDepth, irrStartD, startH, irrStopD, stopH) select ?,irrigationClass,pondDepth, irrStartD, startH, \
+                        irrStopD, stopH from Irrig_floodH where opID=?",(newOpID, origOp_row[0],))  
+                        
+                    elif irrigation_class[0][0] == "FloodR":
+                        c.execute("insert into Irrig_floodR (opID,irrigationClass,pondDepth, rate, irrStartD, startH, irrStopD, stopH) select ?,irrigationClass, pondDepth, rate, irrStartD, startH, \
+                        irrStopD, stopH from Irrig_floodR where opID=?",(newOpID, origOp_row[0],))  
+                    new_t_id
             conn.commit()
             conn.close()
             return True
@@ -1011,7 +1122,7 @@ def check_and_delete_operationDB(op_id,op_name):
 
 
 def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, operation_record, initCond_record, \
-                                 tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irrAmt_record):
+                                 tillage_record, fert_record, fertNut_record, PGR_record, SR_record, irr_param):
     '''
   Check if operation exist, if it exist the record is updated otherwise a new record is inserted into 
   operations table.
@@ -1031,7 +1142,8 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
   Ouput:
     '''
     conn, c = openDB('crop.db')
-    print("operation_record: ",operation_record)
+    print("irr_param: ", irr_param)
+   # print("operation_record: ",operation_record)
     if c:
         op_id = int(op_id)
         # If op_id=-10, it means it is a new operation record so we need to find treatment id and experiment id
@@ -1039,74 +1151,154 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
         o_t_exid = getTreatmentID(treatmentname,experimentname,cropname)
         # tables experiment & treatment are expected to have some value for tid and t_exid.
         record_tuple = (o_t_exid,) + tuple(operation_record)
+
+       
+        
         # Need to do date validation before inserting or updating a operation for "Tillage", "Fertilizer" and "Simulation End"
         if((operation_record[0] == "Simulation End" and op_id != -10) or (operation_record[0] == "Fertilizer") \
            or (operation_record[0] == "Plant Growth Regulator") or (operation_record[0] == "Irrigation") or (operation_record[0] == "Tillage" and tillage_record[0] != "No tillage")):
-     
            validate_date(o_t_exid,operation_record[0],operation_record[1]) 
+
         if(op_id != -10):
             record_tuple2 = record_tuple + (op_id,)
-            c.execute("update operations set o_t_exid =?, name=?, odate=? where opID = ? ",record_tuple2)
+            if operation_record[0] != 'Irrigation':              
+                
+                c.execute("update operations set o_t_exid =?, name=?, odate=? where opID = ? ",record_tuple2)
+                conn.commit()
+                # We need to update the related table to the operation like "Simulation Start" -> initCondOp table, "Tillage"
+                # -> tillageOp table and "Fertilizer" -> fertilizerOp and fertNutOp tables.
+                if operation_record[0] == "Simulation Start":
+                    initCond_record = tuple(initCond_record) + (op_id,)
+                    c.execute("update initCondOp set pop=?, autoirrigation=?, xseed=?, yseed=?, cec=?, eomult=?, rowSpacing=?, cultivar=?, \
+                                seedpieceMass=? where opID=?", initCond_record)
+                elif operation_record[0] == "Tillage":
+                    tillage_record = tuple(tillage_record) + (op_id,)
+                    c.execute("update tillageOp set tillage=? where opID=?", tillage_record)
+                elif operation_record[0] == "Fertilizer":
+                    fert_record = tuple(fert_record) + (op_id,)
+                    c.execute("update fertilizationOp set fertilizationClass=?, depth=? where opID =?", fert_record)
+                    for i in range(0,len(fertNut_record),2):
+                        fertNut =  (fertNut_record[i],fertNut_record[i+1],op_id,)
+                        c.execute("update fertNutOp set nutrientQuantity=? where nutrient=? and opID=?", fertNut)
+                elif operation_record[0] == "Plant Growth Regulator":
+                    PGR_record = tuple(PGR_record) + (op_id,)
+                    c.execute("update PGROp set PGRChemical=?, applicationType=?, bandwidth=?, applicationRate=?, PGRUnit=? where opID=?", PGR_record)
+                elif operation_record[0] == "Surface Residue":
+                    SR_record = tuple(SR_record) + (op_id,)
+                    c.execute("update surfResOp set residueType=?, applicationType=?, applicationTypeValue=? where opID=?", SR_record)
+            else: # operation_record[0] == "Irrigation":    
+                
+                if len(irr_param) == 2:
+                    c.execute("update operations set o_t_exid =?, name=?, odate=? where opID = ? ",record_tuple2)
+                    irrAmt_record = tuple(reversed(irr_param)) + (op_id,)
+                    c.execute("update Irrig_pivotOp set irrigationClass=?, AmtIrrAppl=?  where opID=?", irrAmt_record)
+                else:                       
+                    if irr_param[-1] == 'FloodH':
+                        record_tuple3 =  (op_id,) + record_tuple[:-1] +  (irr_param[1],)     
+                       
+                        c.execute("update operations set o_t_exid =?, name=?, odate=? where opID = ? ",record_tuple3)
+                        irr_param_list = ['FloodH']+ irr_param[:-1]
+                        irr_record = tuple(irr_param_list) + (op_id,)  
+                    
+                        for i in range (0, len(irr_record),7):
+                            hour1 = irr_record[i+3].split(':')[0].lstrip('0')
+                            hour2 = irr_record[i+5].split(':')[0].lstrip('0')
+                            irr_rec = (irr_record[i], irr_record[i+1],irr_record[i+2],hour1,irr_record[i+4],hour2, op_id,)
+                           
+                            c.execute("update Irrig_floodH set irrigationClass=?, pondDepth=?, irrStartD=?, startH=?, irrStopD=?, stopH=? where opID=?", irr_rec)                       
+                    else:                      
+                        record_tuple4 = (op_id,) + record_tuple[:-1] +  (irr_param[1], )                              
+                        c.execute("update operations set o_t_exid =?, name=?, odate=? where opID = ? ",record_tuple4)
+                        irr_param_list = ['FloodR']+ [irr_param[0]] + [irr_param[5]] + irr_param[1:5]
+                      
+                        irr_record = tuple(irr_param_list) + (op_id,)  
+                     
+                        hour1 = irr_record[4].split(':')[0].lstrip('0')
+                        hour2 = irr_record[6].split(':')[0].lstrip('0')
+                        irr_rec = (irr_record[0], irr_record[1],irr_record[2],irr_record[3], hour1,irr_record[5],hour2, op_id,)
+                        
+                        c.execute("update Irrig_floodR set irrigationClass=?, pondDepth=?, rate=?, irrStartD=?, startH=?, irrStopD=?, stopH=? where opID=?", irr_rec)  
+                    
+                
             conn.commit()
-            # We need to update the related table to the operation like "Simulation Start" -> initCondOp table, "Tillage"
-            # -> tillageOp table and "Fertilizer" -> fertilizerOp and fertNutOp tables.
-            if operation_record[0] == "Simulation Start":
-                initCond_record = tuple(initCond_record) + (op_id,)
-                c.execute("update initCondOp set pop=?, autoirrigation=?, xseed=?, yseed=?, cec=?, eomult=?, rowSpacing=?, cultivar=?, \
-                            seedpieceMass=? where opID=?", initCond_record)
-            elif operation_record[0] == "Tillage":
-                tillage_record = tuple(tillage_record) + (op_id,)
-                c.execute("update tillageOp set tillage=? where opID=?", tillage_record)
-            elif operation_record[0] == "Fertilizer":
-                fert_record = tuple(fert_record) + (op_id,)
-                c.execute("update fertilizationOp set fertilizationClass=?, depth=? where opID =?", fert_record)
-                for i in range(0,len(fertNut_record),2):
-                    fertNut =  (fertNut_record[i],fertNut_record[i+1],op_id,)
-                    c.execute("update fertNutOp set nutrientQuantity=? where nutrient=? and opID=?", fertNut)
-            elif operation_record[0] == "Plant Growth Regulator":
-                PGR_record = tuple(PGR_record) + (op_id,)
-                c.execute("update PGROp set PGRChemical=?, applicationType=?, bandwidth=?, applicationRate=?, PGRUnit=? where opID=?", PGR_record)
-            elif operation_record[0] == "Surface Residue":
-                SR_record = tuple(SR_record) + (op_id,)
-                c.execute("update surfResOp set residueType=?, applicationType=?, applicationTypeValue=? where opID=?", SR_record)
-            elif operation_record[0] == "Irrigation":
-                irrAmt_record = tuple(reversed(irrAmt_record)) + (op_id,)
-                c.execute("update Irrig_pivotOp set irrigationClass=?, AmtIrrAppl=?  where opID=?", irrAmt_record)
-            conn.commit()
-        if (op_id==-10):
-            c.execute("insert into operations (o_t_exid, name, odate) values (?,?,?)",record_tuple)
-            conn.commit()
-            # Need to find the id for this operation
-            c1 = c.execute("select opID from operations where o_t_exid=? and name=? and odate=?",record_tuple)
-            c1_row = c1.fetchone()
-            op_id = c1_row[0]
-            # We need to insert records in the related table to the operation like "Simulation Start" -> initCondOp table, 
-            # "Tillage" -> tillageOp table and "Fertilizer" -> fertilizerOp and fertNutOp tables.
-            if operation_record[0] == "Simulation Start":
-                initCond_record = (op_id,) + tuple(initCond_record)
-                c.execute("insert into initCondOp (opID, pop, autoirrigation, xseed, yseed, cec, eomult, rowSpacing, cultivar, \
-                            seedpieceMass) values (?,?,?,?,?,?,?,?,?,?)", initCond_record)
-            elif operation_record[0] == "Tillage":
-                tillage_record = (op_id,) + tuple(tillage_record)
-                c.execute("insert into tillageOp (opID, tillage) values (?,?)", tillage_record)
-            elif operation_record[0] == "Fertilizer":
-                fert_record = (op_id,) + tuple(fert_record)
-                c.execute("insert into fertilizationOp (opID, fertilizationClass, depth) values (?,?,?)", fert_record)
-                for i in range(0,len(fertNut_record),2):
-                    fertNut =  (op_id,fertNut_record[i],fertNut_record[i+1],)
-                    c.execute("insert into fertNutOp (opID, nutrientQuantity, nutrient) values (?,?,?)", fertNut)
-            elif operation_record[0] == "Plant Growth Regulator":
-                PGR_record = (op_id,) + tuple(PGR_record)
-                c.execute("insert into PGROp (opID,PGRChemical,applicationType,bandwidth,applicationRate,PGRUnit) values (?,?,?,?,?,?)", PGR_record)
-            elif operation_record[0] == "Surface Residue":
-                SR_record = (op_id,) + tuple(SR_record)
-                c.execute("insert into surfResOp (opID,residueType,applicationType,applicationTypeValue) values (?,?,?,?)", SR_record)
-            elif operation_record[0] == "Irrigation":
-                irrAmt_record = (op_id,) + tuple(reversed(irrAmt_record))
-                c.execute("insert into Irrig_pivotOp (opID, irrigationClass, AmtIrrAppl) values (?,?,?)", irrAmt_record)
+        else:
+            if operation_record[0] != 'Irrigation':
+                c.execute("insert into operations (o_t_exid, name, odate) values (?,?,?)",record_tuple)
+                conn.commit()
+                
+                # Need to find the id for this operation
+                c1 = c.execute("select opID from operations where o_t_exid=? and name=? and odate=?",record_tuple)
+                c1_row = c1.fetchone()
+                op_id = c1_row[0]
+
+                if operation_record[0] == "Simulation Start":
+                    initCond_record = (op_id,) + tuple(initCond_record)
+                   # c.execute("SELECT opID FROM initCondOp WHERE opID = ?", (op_id,)) 
+                    #if c.fetchone() is not None: 
+                     #   print("Duplicate entry found for opID:", op_id) 
+                        
+                    c.execute("insert into initCondOp (opID, pop, autoirrigation, xseed, yseed, cec, eomult, rowSpacing, cultivar, \
+                                seedpieceMass) values (?,?,?,?,?,?,?,?,?,?)", initCond_record)
+                elif operation_record[0] == "Tillage":
+                    tillage_record = (op_id,) + tuple(tillage_record)
+                    c.execute("insert into tillageOp (opID, tillage) values (?,?)", tillage_record)
+                elif operation_record[0] == "Fertilizer":
+                    fert_record = (op_id,) + tuple(fert_record)
+                    c.execute("insert into fertilizationOp (opID, fertilizationClass, depth) values (?,?,?)", fert_record)
+                    for i in range(0,len(fertNut_record),2):
+                        fertNut =  (op_id,fertNut_record[i],fertNut_record[i+1],)
+                        c.execute("insert into fertNutOp (opID, nutrientQuantity, nutrient) values (?,?,?)", fertNut)
+                elif operation_record[0] == "Plant Growth Regulator":
+                    PGR_record = (op_id,) + tuple(PGR_record)
+                    c.execute("insert into PGROp (opID,PGRChemical,applicationType,bandwidth,applicationRate,PGRUnit) values (?,?,?,?,?,?)", PGR_record)
+                elif operation_record[0] == "Surface Residue":
+                    SR_record = (op_id,) + tuple(SR_record)
+                    c.execute("insert into surfResOp (opID,residueType,applicationType,applicationTypeValue) values (?,?,?,?)", SR_record)
+                    
+            else : # operation_record[0] == "Irrigation":
+                irrigation_class_value = irr_param[-1]
+            
+                if len(irr_param) == 2:
+                    c.execute("insert into operations (o_t_exid, name, odate) values (?,?,?)",record_tuple)   
+                    last_id =   c.lastrowid
+                    opID_operation = last_id 
+                    c.execute("insert into irrigationDetails (opID,o_t_exid, irrigationClass) VALUES (?, ?, ?)", (opID_operation, o_t_exid, irrigation_class_value))
+                    irr_param = (opID_operation ,) + tuple(reversed(irr_param))   
+                    c.execute("insert into Irrig_pivotOp (opID, irrigationClass, AmtIrrAppl) values (?,?,?)", irr_param)
+                else:                       
+                    if irr_param[-1] == 'FloodH':
+                        record_tuple3 = record_tuple[:-1] +  (irr_param[1],)         
+                        c.execute("insert into operations (o_t_exid, name, odate) values (?,?,?)",record_tuple3)
+                        last_id =   c.lastrowid
+                        opID_operation = last_id 
+                        c.execute("insert into irrigationDetails (opID, o_t_exid, irrigationClass) VALUES (?, ?, ?)", (opID_operation, o_t_exid, irrigation_class_value))
+                        irr_record = (opID_operation ,) + (irr_param[-1],) + tuple(irr_param[:-1]) 
+                        
+                        hour1 = int(irr_record[4].split(':')[0])
+                        hour2 = int(irr_record[6].split(':')[0])
+                        irr_record = tuple(irr_record[0:4]) + (hour1, ) +  (irr_record[5], ) + (hour2, )
+                        
+                        c.execute("insert into Irrig_floodH (opID, irrigationClass, pondDepth, irrStartD, startH, irrStopD, stopH) values (?,?,?,?,?,?,?)", irr_record)
+                    else:
+                        irr_param = [irr_param[0], irr_param[5], irr_param[1], irr_param[2], irr_param[3], irr_param[4], irr_param[6]]
+                      #  print(irr_param)
+                        record_tuple4 = record_tuple[:-1] +  (irr_param[2],)         
+                        c.execute("insert into operations (o_t_exid, name, odate) values (?,?,?)",record_tuple4)
+                        last_id =   c.lastrowid
+                        opID_operation = last_id 
+                        c.execute("insert into irrigationDetails (opID, o_t_exid, irrigationClass) VALUES (?, ?, ?)", (opID_operation, o_t_exid, irrigation_class_value))
+                        irr_record = (opID_operation ,) + (irr_param[-1],) + tuple(irr_param[:-1])   
+                        
+                        hour3 = int(irr_record[5].split(':')[0])
+                        hour4 = int(irr_record[7].split(':')[0])
+                        irr_record = tuple(irr_record[0:5]) + (hour3, ) +  (irr_record[6], ) + (hour4, )
+                        
+                        c.execute("insert into Irrig_floodR (opID, irrigationClass, pondDepth, rate, irrStartD, startH, irrStopD, stopH) values (?,?,?,?,?,?,?,?)", irr_record)
+                
             conn.commit()
         conn.close()
-                 
+          # else:
+           #    pass      
         return True
 
 
@@ -1127,6 +1319,7 @@ def validate_date(o_t_exid,op_name,date):
     
         # Check if there is any operation with valid date
         search_operation = (o_t_exid,)
+     
         c.execute("SELECT name, odate, DATE(year||'-'||month||'-'||day) as dt_frmtd FROM (SELECT *, CASE WHEN LENGTH(substr(odate, 1, \
                    instr(odate,'/')-1)) = 2 THEN substr(odate, 1, instr(odate,'/')-1) ELSE '0'|| substr(odate, 1, instr(odate,'/')-1) END as month, \
                    CASE WHEN LENGTH(substr(substr(odate, instr(odate,'/')+1), 1, instr(substr(odate, instr(odate,'/')+1),'/')-1)) = 2 THEN \
@@ -1137,6 +1330,7 @@ def validate_date(o_t_exid,op_name,date):
                    o_t_exid=?", search_operation)
 
         c_row = c.fetchall()
+     #   print(c_row)
         if c_row != None:
             for record in c_row:
                 if(record[1] != ""):
@@ -1280,15 +1474,28 @@ def readOpDetails(operationid, operationName):
             c1 = c.execute("select o.opID, name, odate, residueType, applicationType, applicationTypeValue \
                             from operations o, surfResOp sro where o.opID = sro.opID and o.opID = ?",record_tuple)
         elif operationName =="Irrigation":
-            c1 = c.execute("select o.opID, name, odate, irrigationClass, AmtIrrAppl from operations o, Irrig_pivotOp Iro where o.opID = Iro.opID and o.opID = ?", record_tuple)
+         #    print("XXXXXXXXX")
+          #   print(record_tuple)
+             c2 = c.execute("select irrigationClass from irrigationDetails where opID = ?", record_tuple)
+             c2_row = c2.fetchall()
+             rlist2 = [c2_row_record for c2_row_record in c2_row]
+       
+         #    print(rlist2)
+             if rlist2[0][0]=='Sprinkler':
+                c1 = c.execute("select o.opID, name, irrigationClass, odate, AmtIrrAppl from operations o, Irrig_pivotOp Iro where o.opID = Iro.opID and o.opID = ?", record_tuple)
+             elif rlist2[0][0]=='FloodH':
+                c1 = c.execute("select o.opID, name,  irrigationClass, pondDepth, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodH Iro where o.opID = Iro.opID and o.opID = ?", record_tuple) 
+             elif rlist2[0][0]=='FloodR':
+                c1 = c.execute("select o.opID, name, irrigationClass, pondDepth, rate, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodR Iro where o.opID = Iro.opID and o.opID = ?", record_tuple) 
         else:
             c1 = c.execute("select opID, name, odate from operations where opID = ?",record_tuple)
 
         c1_row = c1.fetchall()
-        for c1_row_record in c1_row:
-            rlist.append(c1_row_record)
+      #  for c1_row_record in c1_row:
+     #       rlist.append(c1_row_record)
+        rlist = [c1_row_record for c1_row_record in c1_row]
         conn.close()
-
+       # print(rlist)
         return rlist
 
 
@@ -1307,9 +1514,10 @@ def read_treatmentDB(crop,experiment):
         record_tuple = (experiment, crop)
         c1 = c.execute("SELECT name FROM treatment where t_exid = (select exid from experiment where name = ? and crop = ?)",record_tuple)    
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record[0])
+       # if c1_row != None:
+       #     for c1_row_record in c1_row:
+        #        rlist.append(c1_row_record[0])
+        rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
         conn.close()  
         return rlist
 
@@ -1337,10 +1545,12 @@ def read_operationsDB(crop,eitem,titem):
                            instr(odate,'/')+1),'/')+1) END AS year FROM operations) where o_t_exid = (select tid from treatment where name ='%s' AND \
                            t_exid =(select exid from experiment where name ='%s' and crop ='%s')) order by dt_frmtd"%(titem,eitem,crop))            
             c1_row = c1.fetchall()
-            if c1_row != None:
-                for c1_row_record in c1_row:
-                    tmp_list = [c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3]]
-                    rlist.append(tmp_list)
+       #     if c1_row != None:
+        #        for c1_row_record in c1_row:
+        #            tmp_list = [c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3]]
+        #            rlist.append(tmp_list)
+            
+            rlist = [[c1_row_record[0],c1_row_record[1],c1_row_record[2],c1_row_record[3]] for c1_row_record in c1_row if c1_row != None]
         conn.close()
         return rlist
 
@@ -1357,9 +1567,10 @@ def read_fertilizationClass():
     if c:
         c1 = c.execute("SELECT fertilizationClass from fertilizationClass order by fertilizationClass")
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record[0])
+    #    if c1_row != None:
+     #       for c1_row_record in c1_row:
+    #            rlist.append(c1_row_record[0])
+        rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
         conn.close()
         return rlist
 
@@ -1375,9 +1586,12 @@ def read_irrigationClass():
     if c:
         c1 = c.execute("SELECT  irrigationClass from  irrigationClass order by  irrigationClass")
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record[0])
+       # print(c1_row)
+   #     if c1_row != None:
+   #         for c1_row_record in c1_row:
+    #            rlist.append(c1_row_record[0])
+        rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
+       # print("rlist", rlist)
         conn.close()
         return rlist
 
@@ -1401,10 +1615,10 @@ def read_FaqDB(tabname,cropname):
             c1= c.execute("SELECT distinct id, tabname, question, answer FROM Faq where tabname='general' or tabname like ?",record_tuple)            
 
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:                
-                rlist.append(c1_row_record)
-    
+      #  if c1_row != None:
+      #      for c1_row_record in c1_row:                
+      #          rlist.append(c1_row_record)
+        rlist = [c1_row_record for c1_row_record in c1_row if c1_row != None]
         conn.close()
         return rlist
 
@@ -1443,9 +1657,10 @@ def read_soilOMDB(soilname):
             c1= c.execute("Select rowid, Sand, Silt, Clay, BD, OM_pct, TH33, TH1500 FROM soil_long where o_sid = (SELECT id FROM soil \
                            where soilname = ? )",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+ #           if c1row != None:
+ #               for c1rowrecord in c1row:
+ #                   rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1465,9 +1680,10 @@ def read_soilhydroDB(soilname):
             c1= c.execute("Select thr, ths, tha, th, Alfa, n, Ks, Kk, thk, BD, OM_pct, Sand, Silt FROM soil_long where o_sid = \
                            (SELECT id FROM soil where soilname = ? )",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+          #  if c1row != None:
+          #      for c1rowrecord in c1row:
+           #         rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1511,9 +1727,10 @@ def read_soillongDB(soilname):
                            Kk,thk,kh,kL,km,kn,kd,fe,fh,r0,rL,rm,fa,nq,cs FROM soil_long where o_sid = (SELECT id FROM \
                            soil where soilname = ?)",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+         #   if c1row != None:
+        #        for c1rowrecord in c1row:
+        #            rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1550,12 +1767,13 @@ def read_soilshortDB(soilname):
     conn, c = openDB('crop.db')
     if c:
         if len(soilname) > 0:
-            c1= c.execute("Select Bottom_depth,initType,OM_pct,NO3,NH4,HnNew,Tmpr,Sand,Silt,Clay,BD,TH33,TH1500,thr,ths,tha,th,Alfa,n,Ks,Kk,thk,CO2,O2 FROM soil_long \
+            c1= c.execute("Select Bottom_depth,initType,OM_pct,NO3,NH4,HnNew,Tmpr,Sand,Silt,Clay,BD,TH33,TH1500,thr,ths,tha,th,Alfa,n,Ks,Kk,thk,CO2,O2, N2O FROM soil_long \
                            where o_sid = (SELECT id FROM soil where soilname = ? )",[soilname])      
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+        #    if c1row != None:
+        #        for c1rowrecord in c1row:
+         #           rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1575,9 +1793,10 @@ def read_soiltextureDB(soilname):
         if len(soilname) > 0:
             c1= c.execute("Select Sand,Silt,Clay FROM soil_long where o_sid = (SELECT id FROM soil where soilname = ? )",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+        #    if c1row != None:
+         #       for c1rowrecord in c1row:
+         #           rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1594,9 +1813,10 @@ def read_gasDB():
     if c:
         c1= c.execute("Select name,EPSI,bTort,Diffusion_Coeff FROM gas order by id")
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord)
+     #   if c1row != None:
+      #      for c1rowrecord in c1row:
+      #          rlist.append(c1rowrecord)
+        rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1617,9 +1837,10 @@ def read_soilnitrogenDB(soilname):
             c1= c.execute("Select kh,kL,km,kn,kd,fe,fh,r0,rL,rm,fa,nq,cs FROM soil_long where o_sid = (SELECT id FROM soil where \
                            soilname = ? )",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)
+       #     if c1row != None:
+       #         for c1rowrecord in c1row:
+       #             rlist.append(c1rowrecord)
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -1807,9 +2028,10 @@ def read_soilDB():
     if c:
         c1 = c.execute("SELECT id, soilname FROM soil order by lower(soilname)")      
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record[1])
+    #    if c1_row != None:
+     #       for c1_row_record in c1_row:
+     #           rlist.append(c1_row_record[1])
+        rlist = [c1_row_record[1] for c1_row_record in c1_row if c1_row != None]
         
         conn.close()       
         return rlist
@@ -1830,9 +2052,10 @@ def read_soilgridratioDB(soilname):
             c1= c.execute("Select SR1,SR2,IR1,IR2,PlantingDepth,XLimitRoot,BottomBC,GasBCTop,GasBCBottom FROM gridratio where gridratio_id = (SELECT \
                            o_gridratio_id FROM soil where soilname = ? )",[soilname])
             c1row = c1.fetchall()
-            if c1row != None:
-                for c1rowrecord in c1row:
-                    rlist.append(c1rowrecord)            
+       #     if c1row != None:
+       #         for c1rowrecord in c1row:
+        #            rlist.append(c1rowrecord)    
+            rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]        
         conn.close()
         return rlist
 
@@ -1849,9 +2072,10 @@ def read_biologydefault():
     if c:
         c1 = c.execute("SELECT dthH, dthL, es, Th_m, tb, QT, dThD, Th_d FROM biologydefault")          
         c1_row = c1.fetchall()
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record)
+    #    if c1_row != None:
+     #       for c1_row_record in c1_row:
+      #          rlist.append(c1_row_record)
+        rlist = [c1_row_record for c1_row_record in c1_row if c1_row != None]
         conn.close()           
         return rlist
 
@@ -1871,9 +2095,10 @@ def read_experiment(item):
         if len(search_str) > 0:
             c1 = c.execute("SELECT exid, name FROM experiment where crop= '%s' order by name;"%(search_str))          
             c1_row = c1.fetchall()
-            if c1_row != None:
-                for c1_row_record in c1_row:
-                    rlist.append(c1_row_record[1])     
+       #     if c1_row != None:
+       #         for c1_row_record in c1_row:
+       #             rlist.append(c1_row_record[1])     
+            rlist = [c1_row_record[1] for c1_row_record in c1_row if c1_row != None]
             conn.close()    
         
         return rlist
@@ -1926,26 +2151,63 @@ def getMulchDecomp(nutrient):
 
 def getIrrigationData(simulationname, o_t_exid):
     '''
-    Returns tuple with amouts of irrigation for a particular irrigationClass
+    Returns tuple with amounts of irrigation for a Sprinkler irrigationClass
     Input:
       irrigationClass
     Output:
       Tuple with amounts of irrigation
     '''
-    print("Sim:", simulationname)
+  #  print("Sim:", simulationname)
     
     rlist=[]
     conn, c = openDB('crop.db')
     if c:
-       # c1 = c.execute("select o.opID, o.o_t_exid, AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID =Ip.opID and o.o_t_exid=?", simulationname)
         c1 = c.execute("select o.odate, AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
        # print("c1row",c1row)
         if c1row != None:
-          
-            for c1_row_record in c1row:
-                rlist.append(c1_row_record)
+            rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
+        conn.close()
+        return rlist
 
+
+def getFloodHData(simulationname, o_t_exid):
+    '''
+    Returns tuple with amouts of irrigation for Flood_H irrigationClass
+    Input:
+      irrigationClass
+    Output:
+      Tuple with amounts of irrigation
+    '''
+    
+    rlist=[]
+    conn, c = openDB('crop.db')
+    if c:
+        c1 = c.execute("select pondDepth, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodH Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
+        c1row = c1.fetchall()
+       # print("c1row",c1row)
+        if c1row != None:
+            rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
+        conn.close()
+        return rlist
+    
+def getFloodRData(simulationname, o_t_exid):
+    '''
+    Returns tuple with amouts of irrigation for Flood_R irrigationClass
+    Input:
+      irrigationClass
+    Output:
+      Tuple with amounts of irrigation
+    '''
+    
+    rlist=[]
+    conn, c = openDB('crop.db')
+    if c:
+        c1 = c.execute("select pondDepth, rate, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodR Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
+        c1row = c1.fetchall()
+       # print("c1row",c1row)
+        if c1row != None:
+            rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
       #  print("rlist:",rlist)
         return rlist
@@ -1958,7 +2220,7 @@ def extract_irrigAmtData(simulationname, o_t_exid):
     Output:
       Tuple with amounts of irrigation
     '''
-    print("Sim:", simulationname)
+   # print("Sim:", simulationname)
     
     rlist=[]
     conn, c = openDB('crop.db')
@@ -1967,13 +2229,24 @@ def extract_irrigAmtData(simulationname, o_t_exid):
         c1 = c.execute("select  AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
        # print("c1row",c1row)
-        if c1row != None:
+  #      if c1row != None:
           
-            for c1_row_record in c1row:
-                rlist.append(c1_row_record)
-
+  #          for c1_row_record in c1row:
+    #            rlist.append(c1_row_record)
+        rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
-        print("rlist:",rlist)
+        return rlist
+    
+
+def read_irrigationDB(o_t_exid):
+    rlist=[]
+    conn, c = openDB('crop.db')
+    if c:
+        c1 = c.execute("select opID, irrigationClass from irrigationDetails where o_t_exid = ?", (o_t_exid, ))
+        c1row = c1.fetchall()
+        rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
+        conn.close()
+        print("read_irrigationDB: ", rlist)
         return rlist
 
 def read_weather_id_forstationtype(stationtype):  
@@ -1989,13 +2262,31 @@ def read_weather_id_forstationtype(stationtype):
     if c:
         c1 = c.execute("SELECT distinct weather_id FROM weather_data where stationtype = ? order by lower(weather_id)",(stationtype,))
         c1_row = c1.fetchall()
- 
-        if c1_row != None:
-            for c1_row_record in c1_row:
-                rlist.append(c1_row_record[0])
-         
+     #   if c1_row != None:
+        #    for c1_row_record in c1_row:
+      #          rlist.append(c1_row_record[0])
+        rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
         conn.close()            
         return rlist
+
+
+def read_weatherDate_forstationtype(stationtype, weather_id):  
+    '''
+    Returns weather date list for a specific site name/stationtype.
+    Input:
+    stationtype
+     Output:
+    Tuple with weather date list
+    '''
+
+    conn, c = openDB('crop.db')
+    if c:
+       # c1 = c.execute("SELECT date FROM weather_data where stationtype = ?",(stationtype,)) #order by lower(weather_id)",(stationtype,))
+        c1= c.execute("SELECT max(date), min(date) FROM weather_data where stationtype =? and weather_id = ? group by stationtype, weather_id", (stationtype,weather_id))
+        c1_row = c1.fetchall()
+         
+        conn.close()            
+        return c1_row[0][0], c1_row[0][1]
 
 def read_weatherDate_forstationtype(stationtype, weather_id):  
     '''
@@ -2005,6 +2296,15 @@ def read_weatherDate_forstationtype(stationtype, weather_id):
   Output:
     Tuple with weather date list
     '''
+
+    conn, c = openDB('crop.db')
+    if c:
+       # c1 = c.execute("SELECT date FROM weather_data where stationtype = ?",(stationtype,)) #order by lower(weather_id)",(stationtype,))
+        c1= c.execute("SELECT max(date), min(date) FROM weather_data where stationtype =? and weather_id = ? group by stationtype, weather_id", (stationtype,weather_id))
+        c1_row = c1.fetchall()
+         
+        conn.close()            
+        return c1_row[0][0], c1_row[0][1]
 
     conn, c = openDB('crop.db')
     if c:
@@ -2408,7 +2708,7 @@ def checkNaNInOutputFile(table_name,g_name):
     columnList = []
     spaceStr = ", "
     message = ""
-    print(g_name, table_name)
+ #   print(g_name, table_name)
     g_df = pd.read_csv(g_name,skipinitialspace=True,index_col=False)
     # Check for NaN values for each dataframe column
     dates = []
@@ -2529,7 +2829,7 @@ def ingestGeometryFile(grdFile,g03File,simulation):
         # strip leading and trailing spaces from column names
         for col in g_df.columns: 
             g_df.rename(columns={col:col.strip()},inplace=True)
-        g_df = g_df.drop(columns=['Date_time','Date','hNew','thNew','Vx','Vy','Q','NO3N','NH4N','Temp','CO2Conc','O2Conc'])
+        g_df = g_df.drop(columns=['Date_time','Date','hNew','thNew','Vx','Vy','Q','NO3N','NH4N','Temp','CO2Conc','O2Conc', 'N2OConc'])
         # Get unique value for each row
         g_df = g_df.drop_duplicates(keep="first")
 
@@ -2911,10 +3211,10 @@ def getNitroWaterStressDates(sim_id):
                         (PSIEffect_leaf <= 0.75 or NEffect_leaf <= 0.75 or PSIEffect_Pn <= 0.75 or NEffect_Pn <= 0.75) and \
                         plantStress_potato_id=? order by Date_Time",[sim_id])
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord)
-
+  #      if c1row != None:
+    #        for c1rowrecord in c1row:
+    #            rlist.append(c1rowrecord)
+        rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -2941,10 +3241,10 @@ def getMaizePlantStressDates(sim_id):
                         (waterstress >= 0.25 or N_stress >= 0.25 or Shade_Stress >= 0.25 or PotentialArea >= 0.25) and \
                         plantStress_maize_id=? order by Date_Time",[sim_id])
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord)
-
+     #   if c1row != None:
+      #      for c1rowrecord in c1row:
+      #          rlist.append(c1rowrecord)
+        rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
@@ -2972,16 +3272,16 @@ def getSoybeanPlantStressDates(sim_id):
                         ps.plantStress_soybean_id=?  and ps.plantStress_soybean_id=g1.g01_soybean_id  and ps.Date_Time=g1.Date_Time \
                         order by ps.Date_Time",[sim_id])
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord)
-
+   #     if c1row != None:
+   #         for c1rowrecord in c1row:
+    #            rlist.append(c1rowrecord)
+        rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
 
 
 def getCottonPlantStressDates(sim_id):
-    '''
+    '''   
   Returns dates where nitrogen, carbon  and water (<=0.75) stress were present.
   Input:
     sim_id = simulation id
@@ -3002,13 +3302,19 @@ def getCottonPlantStressDates(sim_id):
                         (W_stress<0.8 or N_Veg_Str<0.8 or N_Fru_Str<0.8 or N_Rt_Str<0.8 or C_Stress<0.8) and \
                         plantStress_cotton_id=? order by Date_Time",[sim_id])
         c1row = c1.fetchall()
-        if c1row != None:
-            for c1rowrecord in c1row:
-                rlist.append(c1rowrecord)
-
+     #   if c1row != None:
+     #       for c1rowrecord in c1row:
+      #          rlist.append(c1rowrecord)
+        rlist = [c1rowrecord for c1rowrecord in c1row if c1row != None]
         conn.close()
         return rlist
-
+'''
+def Cumulative(lists):
+    cu_list = []
+    length = len(lists)
+    cu_list = [sum(lists[0:x:1]) for x in range(0, length-1)]
+    return cu_list[:]   
+'''
 def Cumulative(lists):
     cu_list = []
     length = len(lists)
@@ -3099,18 +3405,18 @@ def check_cultivarDB(crop, cultivarname):
 
             
 def update_cultivarDB(crop, record_tuple):
-    print(record_tuple)
+  #  print(record_tuple)
     # print(crop, record_tuple[0])
  
 
     (crop,cultivarname) =record_tuple[0].split(":")
   #  rlist = []
   #  rlist = check_cultivarDB(crop, cultivarname)
-    print(cultivarname)
+  #  print(cultivarname)
 
   #  if rlist == []:
     updated_tuple = record_tuple[1:] + (cultivarname,)
-    print("Updated_tuple:", updated_tuple)
+ #   print("Updated_tuple:", updated_tuple)
     conn, c = openDB('crop.db')
 
     if c:
@@ -3128,3 +3434,17 @@ def update_cultivarDB(crop, record_tuple):
         conn.commit()
         conn.close()
     return True
+
+
+def expSysOutput(id, irr, yld):
+	conn, c = openDB('cropOutput.db')
+	if c:
+		c.execute("insert into expSys_output (simID, irri, yield) values(?,?,?)", (id, irr, yld,))
+
+	conn.commit()
+	conn.close()
+	return True
+
+def daterange(start_date, end_date):
+    for n in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(n)

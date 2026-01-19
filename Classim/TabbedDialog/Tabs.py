@@ -17,9 +17,10 @@ from TabbedDialog.OutputTab import *
 from TabbedDialog.WelcomeTab import *
 from TabbedDialog.SiteTab import *
 from TabbedDialog.AboutTab import *
-#from TabbedDialog.ExpertSystab import *
+from TabbedDialog.ExpertSysTab import *
 
 import os
+
 
 '''
 This is main tab for the interface. classim.py (application main entry point) call this tab class.  All the other tabs (Welcome, 
@@ -82,7 +83,7 @@ class Tabs_Widget(QTabWidget):
         self.Rotationtab = Rotation_Widget()
         self.Outputtab = Output2_Widget()
         self.RotOutputtab = RotOutput_Widget()
-      #  self.ExpertSystab = ExpertSys_Widget()
+        self.ExpertSysTab = ExpertSys_Widget()
         self.Abouttab = About_Widget()
                 
         self.Managementtab.setUpdatesEnabled(True)
@@ -96,7 +97,7 @@ class Tabs_Widget(QTabWidget):
         self.addTab(self.Rotationtab, "  Rotation Builder  ")      
         self.addTab(self.Outputtab, "  Seasonal Output  ")
         self.addTab(self.RotOutputtab, "  Rotation Output  ")
-       # self.addTab(self.ExpertSystab, "Expert System")
+        self.addTab(self.ExpertSysTab, "Expert System")
         self.addTab(self.Abouttab, "  About  ")
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -109,13 +110,20 @@ class Tabs_Widget(QTabWidget):
         
         # Connecting Output tab with Seasonal tab
         self.Outputtab.make_connection(self.Seasonaltab)
+      #  self.Seasonaltab.checkbox_checked.connect(self.Outputtab.populate)
 
         # Connecting RotOutput tab with Rotation tab
         self.RotOutputtab.make_connection(self.Rotationtab)
 
+        #Connecting ExpertSystem Tab to Seasonal Tab
+        self.ExpertSysTab.make_connection(self.Seasonaltab)
+
         self.make_connection(self.Welcometab)     
         self.show()
         self.currentChanged.connect(self.OncurrentChanged)
+        
+
+        
         
 
     def make_connection(self,welcome_object):
@@ -123,26 +131,26 @@ class Tabs_Widget(QTabWidget):
 
 
     def OnTabChanged(self,MyCurrentTab):
-        if MyCurrentTab >=1 and  MyCurrentTab <=9:
+        if 1<= MyCurrentTab <=11:
+            print(MyCurrentTab)
             self.setCurrentIndex(MyCurrentTab)
         else:
             self.setCurrentIndex(0)
 
 
     def OncurrentChanged(self,MyCurrentTab):
-        if self.currentIndex() == 3:
-            self.WeatherTab.refresh()
-        if self.currentIndex() == 4:
-            self.soiltab.reset_view()
         if self.currentIndex() == 5:
-            self.Managementtab.fresh()
+            self.WeatherTab.refresh()
         if self.currentIndex() == 6:
-            self.Seasonaltab.refresh()
+            self.soiltab.reset_view()
         if self.currentIndex() == 7:
+            self.Managementtab.fresh()
+        if self.currentIndex() == 8:
+            self.Seasonaltab.refresh()
+        if self.currentIndex() == 9:
             self.Rotationtab.refresh()
-   #     if self.currentIndex() == 8:
-    #        self.Cultivartab.refresh()
-
+        if self.currentIndex() == 11:
+            self.ExpertSysTab.reset()
 
 
     def center(self):

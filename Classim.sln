@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "classim", "classim\classim.pyproj", "{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{238B01BD-67D1-4DD8-85BD-9594F269F2E1}"
 	ProjectSection(SolutionItems) = preProject
 		classim\images\COMMON.ICO = classim\images\COMMON.ICO
 		..\..\..\..\classim\crop.db = ..\..\..\..\classim\crop.db
 	EndProjectSection
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "classim", "classim\classim.pyproj", "{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,8 +17,7 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}.Debug|Any CPU.Deploy.0 = Release|Any CPU
+		{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F5D7FD33-1A84-44A3-8EAB-F7F33A045769}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
@@ -31,9 +30,9 @@ Global
 		SccNumberOfProjects = 2
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://arsmdbe3320dta.usda.net/tfs/cgc
-		SccProjectUniqueName0 = classim\\classim.pyproj
-		SccProjectName0 = classim
-		SccLocalPath0 = classim
-		SccLocalPath1 = .
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = classim\\classim.pyproj
+		SccProjectName1 = classim
+		SccLocalPath1 = classim
 	EndGlobalSection
 EndGlobal
