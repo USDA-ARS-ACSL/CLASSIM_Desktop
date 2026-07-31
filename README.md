@@ -1,5 +1,5 @@
 # CLASSIM
-*Currently Release 2.4.0.3*
+*Currently Release 2.4.0.4*
 
 Interface program for our crop models
 This is the interface for our crop models. it is written in Python, version 10.0.8 and utilizes QT for the interface
