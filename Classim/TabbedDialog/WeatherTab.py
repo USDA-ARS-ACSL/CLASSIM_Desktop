@@ -86,7 +86,7 @@ please provide a column named weather_id with the identifier you want.  For site
         self.stationtypecombo.addItem("Add New Station Name")
         for id in sorted(stationtypelists, key = lambda i: (stationtypelists[i])):            
             self.stationtypecombo.addItem(stationtypelists[id])
-        self.stationtypecombo.currentIndexChanged.connect(self.showweatherdetailscombo,self.stationtypecombo.currentIndex())
+        self.stationtypecombo.currentIndexChanged.connect(self.showweatherdetailscombo) #,self.stationtypecombo.currentIndex())
 
         self.sitelabel = QLabel("Site")
         self.sitecombo = QComboBox()        
@@ -114,7 +114,7 @@ please provide a column named weather_id with the identifier you want.  For site
         self.buttonDownload.clicked.connect(self.downloadWeatherData)
         self.stationtypelabel = QLabel("Station Name")
         self.stationtypeedit = QLineEdit("")
-        self.weatherbutton = QPushButton("SaveAs")
+        self.weatherbutton = QPushButton("Save")
         self.weatherdeletebutton = QPushButton("Delete")
 
         self.mainlayout.addLayout(self.vHeader,0,0,1,4)
@@ -177,15 +177,36 @@ please provide a column named weather_id with the identifier you want.  For site
 
 
     def checkWeatherBySite(self,siteIndex):
+        stationtype = self.stationtypecombo.currentText()
+        if stationtype == "Add New Station Name":
+            self.downloadwflabel.setVisible(False)
+            self.buttonDownload.setVisible(False)
+            self.uploadwflabel.setVisible(False)
+            self.buttonUpload.setVisible(False)
+            return False
+
         siteName = str(self.sitecombo.currentText())
-        if siteName == "":
+        if not siteName or siteName == "Select from list":
+            self.downloadwflabel.setVisible(False)
+            self.buttonDownload.setVisible(False)
             return False
         # Get site lat lon
         weathertuple = extract_sitedetails(siteName)
-        print("PPPP")
-        print(weathertuple)
-        lat = weathertuple[1]
-        lon = weathertuple[2]
+           # Handle different return types defensively
+        try:
+            # tuple/list: (id, lat, lon, ...)
+            lat = float(weathertuple[1])
+            lon = float(weathertuple[2])
+        except (TypeError, IndexError):
+            # already scalar or invalid: treat as no US match
+            try:
+                # if extract_sitedetails returns lat directly
+                lat = float(weathertuple)
+                lon = 0.0
+            except Exception:
+                self.downloadwflabel.setVisible(False)
+                self.buttonDownload.setVisible(False)
+                return False
         if(Weather_Widget.checkUS(lat,lon)):
             self.downloadwflabel.setVisible(True)
             self.buttonDownload.setVisible(True)
@@ -234,15 +255,15 @@ please provide a column named weather_id with the identifier you want.  For site
             self.avgco2edit.setVisible(True)
             self.chemclabel.setVisible(True)
             self.chemcedit.setVisible(True)
-          #  self.uploadwflabel.setVisible(True)
-          #  self.buttonUpload.setVisible(True)
+            self.downloadwflabel.setVisible(False)
+            self.buttonDownload.setVisible(False)
+            self.uploadwflabel.setVisible(False)
+            self.buttonUpload.setVisible(False)
             self.weatherbutton.setVisible(True)
 
             stationtype = str(self.stationtypecombo.itemText(self.stationtypecombo.currentIndex()))
-            print("FFF")
-            print(stationtype)
             if stationtype ==  "Add New Station Name":
-              #  self.sitecombo.currentIndexChanged.connect(self.checkWeatherBySite,self.sitecombo.currentIndex())
+                self.sitecombo.currentIndexChanged.connect(self.checkWeatherBySite) #,self.sitecombo.currentIndex())
                 self.weathersummarylabel.setText("")
                 self.avgwindedit.setText("0")
                 self.avgrainrateedit.setText("3.0")
@@ -252,17 +273,13 @@ please provide a column named weather_id with the identifier you want.  For site
                 self.stationtypelabel.setVisible(True)
                 self.stationtypeedit.setVisible(True)
                 self.weatherbutton.setText("SaveAs")
-             #   self.weatherbutton.clicked.connect(self.showPrompt)
                 self.sitecombo.setEnabled(True)
-                self.uploadwflabel.setVisible(False)
-                self.buttonUpload.setVisible(False)
+                
                 self.downloadwflabel.setVisible(False)
                 self.buttonDownload.setVisible(False)
+                self.uploadwflabel.setVisible(False)
+                self.buttonUpload.setVisible(False)
             else:
-                self.uploadwflabel.setVisible(True)
-                self.buttonUpload.setVisible(True)
-                self.downloadwflabel.setVisible(True)
-                self.buttonDownload.setVisible(True)
                 weathertuple = read_weatherlongDB(stationtype)  
                 self.stationtypelabel.setVisible(False)
                 self.stationtypeedit.setVisible(False)
@@ -271,6 +288,8 @@ please provide a column named weather_id with the identifier you want.  For site
                 if Weather_Widget.checkWeather(stationtype):
                     self.downloadwflabel.setVisible(True)
                     self.buttonDownload.setVisible(True)
+                    self.uploadwflabel.setVisible(True)
+                    self.buttonUpload.setVisible(True)
 
                 self.avgwindedit.setText(str(weathertuple[7]))
                 self.avgrainrateedit.setText(str(weathertuple[8]))
@@ -283,11 +302,9 @@ please provide a column named weather_id with the identifier you want.  For site
                 self.weathersummarylabel.setVisible(True)
                 site = str(self.sitecombo.currentText())
                 self.weatherdeletebutton.setVisible(True)
-                
-            if not self.weatherdeletebutton.receivers(self.weatherdeletebutton.clicked):
-                self.weatherdeletebutton.clicked.connect(self.on_weatherdeletebuttonclick)                
+                self.weatherdeletebutton.clicked.connect(self.on_weatherdeletebuttonclick)
             self.weatherbutton.clicked.connect(lambda:self.on_weatherbuttonclick(stationtype))
-    
+
 
     def getWeatherSummary(stationtype):
         # getting weather data from sqlite
@@ -502,7 +519,7 @@ please provide a column named weather_id with the identifier you want.  For site
         currentyear = datetime.now().year
        # print("Cuurent Date: ", currentyear)
         year = str(currentyear+2)
-        url = "https://weather.covercrop-data.org/hourly?email=Classim-help-ars@usda.gov&lat="+lat+"&lon="+lon+"&start=2015-1-1&end="+year+"-12-31&attributes=air_temperature,relative_humidity,wind_speed,shortwave_radiation,precipitation&output=csv&options=predicted"
+        url = "https://weather.covercrop-data.org/hourly?email=ARS-CLASSIM-Help@usda.gov&lat="+lat+"&lon="+lon+"&start=2015-1-1&end="+year+"-12-31&attributes=air_temperature,relative_humidity,wind_speed,shortwave_radiation,precipitation&output=csv&options=predicted"
         try:
           #  print(url)
             data = pd.read_csv(url,storage_options={'User-Agent':'Mozilla/5.0'})
@@ -563,7 +580,7 @@ please provide a column named weather_id with the identifier you want.  For site
 
 
     @pyqtSlot()
-    def on_weatherbuttonclick(self,stationtype):
+    def on_weatherbuttonclick(self,item1):
         '''
          save the changes to weather table
         '''
@@ -605,16 +622,12 @@ please provide a column named weather_id with the identifier you want.  For site
             messageUserInfo("You might want to check the following information:<br>"+errMess)
         
         record_tuple = (bsolar,btemp,atemp,bwind,bir,avgwind,avgrain,chem,avgco2,str(self.sitecombo.currentText()),sttype)
-       
-        
         c1 = insert_update_weather(record_tuple,self.weatherbutton.text())
         if c1:
-            self.stationtypecombo.clear()  
+            self.stationtypecombo.clear()        
             stationtypelists = read_weather_metaDB() 
             self.stationtypecombo.addItem("Select from list")
             self.stationtypecombo.addItem("Add New Station Name")
-            if self.weatherbutton.text() == "SaveAs":
-                self.showPrompt()
             for id in sorted(stationtypelists, key = lambda i: (stationtypelists[i])):            
                 self.stationtypecombo.addItem(stationtypelists[id])
             self.sitelabel.setVisible(False)
@@ -637,30 +650,36 @@ please provide a column named weather_id with the identifier you want.  For site
             self.weatherbutton.setVisible(False)
             self.weatherdeletebutton.setVisible(False)
             self.weatherbutton.setText("")
-            self.refresh() 
 
+         # Prompt with title "SaveAs"
+        msgBox = QMessageBox(self)
+        msgBox.setIcon(QMessageBox.Information)
+        msgBox.setWindowTitle("SaveAs")
+        msgBox.setText(
+            "After saving the station name, select the saved station name "
+            "from the Station dropdown in the Weather tab to Download/Upload weather data!"
+        )
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec_()
 
     @pyqtSlot()
     def on_weatherdeletebuttonclick(self):
         '''
         Delete record on weather table
-        '''  
-        print("Delete button clicked.") 
+        '''       
         site = str(self.sitecombo.currentText())
         stationtype = str(self.stationtypecombo.currentText())
-
-        delete_flag = messageUserDelete("Are you sure you want to delete this record?")           
-        if not delete_flag:
-            print("User canceled deletion.")  # Debugging
+        if site == "":
             return False
-        c1 = delete_weather(site,stationtype)
-        if c1:
-            self.refresh()          
-            self.sitecombo.setCurrentIndex(-1)  # Use setCurrentIndex(-1) for non-editable comboboxes 
-            print("After clearing sitecombo:", self.sitecombo.currentText())
+        delete_flag = messageUserDelete("Are you sure you want to delete this record?")
+        if delete_flag:
+            c1 = delete_weather(site,stationtype)
+            if c1:
+                self.refresh()        
             return True
+        else:
+            return False
 
-        
 
     def importfaq(self, thetabname=None):        
         faqlist = read_FaqDB(thetabname,'') 
@@ -756,19 +775,3 @@ please provide a column named weather_id with the identifier you want.  For site
         self.weatherbutton.setVisible(False)
         self.weatherdeletebutton.setVisible(False)
         return True
-    
-    
-    def showPrompt(self):
-        msg = QMessageBox()
-        msg.setWindowTitle("SaveAs")
-        msg.setText("After saving the station name, select the saved station name from the dropdown in Weather Tab to Download/Upload weather data!")
-        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        msg.setIcon(QMessageBox.Information)     
-        response = msg.exec()  
-        if response == QMessageBox.Ok:
-            print("You clicked Ok!")
-        else:
-            print("You clicked Cancel!")
-       
-        
-            

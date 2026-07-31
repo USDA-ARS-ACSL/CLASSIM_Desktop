@@ -1,4 +1,4 @@
-__all__ = ["DateAxisItem"]
+__all__ = ["DateAxisItem"]   
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTabBar, QTabWidget, QHBoxLayout
 from PyQt5.QtCore import *
@@ -40,6 +40,8 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] ="1.25"
 os.environ["QT_DEVICE_PIXEL_RATIO"] = "auto"
+
+
 
 class TabBar(QTabBar):
     def __init__(self, parent):
@@ -98,7 +100,7 @@ class Tabs_Widget(QTabWidget):
         self.addTab(self.Outputtab, "  Seasonal Output  ")
         self.addTab(self.RotOutputtab, "  Rotation Output  ")
         self.addTab(self.ExpertSysTab, "Expert System")
-        self.addTab(self.Abouttab, "  About  ")
+        self.addTab(self.Abouttab, "  About  ")      
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(9)
@@ -107,24 +109,21 @@ class Tabs_Widget(QTabWidget):
         self.layout = QHBoxLayout(self)
         self.setLayout(self.layout)
         self.setWindowTitle("CLASSIM - Crop, Land And Soil SIMulation")
-        
-        # Connecting Output tab with Seasonal tab
-        self.Outputtab.make_connection(self.Seasonaltab)
-      #  self.Seasonaltab.checkbox_checked.connect(self.Outputtab.populate)
-
+      
         # Connecting RotOutput tab with Rotation tab
         self.RotOutputtab.make_connection(self.Rotationtab)
 
-        #Connecting ExpertSystem Tab to Seasonal Tab
-        self.ExpertSysTab.make_connection(self.Seasonaltab)
+        try:
+            self.Seasonaltab.seasonalResetSig.connect(self.ExpertSysTab.reset)
+         #   print("Tabs: connected Seasonaltab.seasonalResetSig -> ExpertSysTab.reset")
+            self.Seasonaltab.seasonalResetNitroSig.connect(self.ExpertSysTab.reset_nitro)
+          #  print("Tabs: connected Seasonaltab.seasonalResetNitroSig -> ExpertSysTab.reset")
+        except Exception:
+            pass
 
         self.make_connection(self.Welcometab)     
         self.show()
         self.currentChanged.connect(self.OncurrentChanged)
-        
-
-        
-        
 
     def make_connection(self,welcome_object):
         welcome_object.welcomesig.connect(self.OnTabChanged)
@@ -136,7 +135,6 @@ class Tabs_Widget(QTabWidget):
             self.setCurrentIndex(MyCurrentTab)
         else:
             self.setCurrentIndex(0)
-
 
     def OncurrentChanged(self,MyCurrentTab):
         if self.currentIndex() == 5:
@@ -151,7 +149,6 @@ class Tabs_Widget(QTabWidget):
             self.Rotationtab.refresh()
         if self.currentIndex() == 11:
             self.ExpertSysTab.reset()
-
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()

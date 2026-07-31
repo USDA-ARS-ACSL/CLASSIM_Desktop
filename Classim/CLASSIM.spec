@@ -13,7 +13,7 @@ added_files= [
   # (user_profile +'\\AppData\\Local\\anaconda3\\envs\\classim2022\\Lib\\site-packages\\pyqtlet', 'pyqtlet')
    ]
 a = Analysis(['classim.py'],
-             pathex=[os.environ['Conda_prefix'] + '\\Library\\bin'], #[ "/%userprofile%/AppData/Local/anaconda3/envs/classim2022/Library/bin"], 
+             pathex=[os.environ['Conda_prefix'] + '\\Library\\bin'], #[ "/%userprofile%/AppData/Local/anaconda3/envs/classim22/Library/bin"], 
              binaries=[],
              datas=added_files,
              hiddenimports=[],

@@ -1,4 +1,4 @@
-from platform import machine
+﻿from platform import machine
 import subprocess
 import os
 import csv
@@ -18,9 +18,9 @@ from datetime import datetime
 
 
 
-global classimDir
-global runDir
-global storeDir
+#global classimDir
+#global runDir
+#global storeDir
 
 classimDir = getClassimDir()
 runDir = os.path.join(classimDir,'run')
@@ -396,8 +396,18 @@ the date range of your simulation, there are data missing for this simulation pe
         del weatherRoundDict['rh']
 
     co2_flag = 1  
-    if CO2Var != "None":
-        df_weatherdata['CO2'] = float(CO2Var)
+    # Treat string 'None' (from UI/DB) the same as numeric 0: no override
+    try:
+        is_none_string = isinstance(CO2Var, str) and CO2Var.strip().lower() == 'none'
+    except Exception:
+        is_none_string = False
+
+    if not is_none_string and CO2Var != 0:
+        try:
+            df_weatherdata['CO2'] = float(CO2Var)
+        except (TypeError, ValueError):
+            # If conversion fails, fall back to using file/DB CO2 values
+            pass
     else:
         if (df_weatherdata['CO2'].isna().sum() > 0 or (df_weatherdata['CO2'] == '').sum() > 0):
             df_weatherdata = df_weatherdata.drop(columns=['CO2'])
@@ -454,7 +464,173 @@ the date range of your simulation, there are data missing for this simulation pe
         val =  val + "    " + str(weatherparameters[9])
         if(co2_flag == 0):
             header = header + "    Co2"
-            if CO2Var == "None":
+            if CO2Var == 0:
+                val =  val + "    " + str(weatherparameters[10])
+            # Seinsitivity analyses CO2 variance
+            else:
+                val =  val + "    " + str(CO2Var)
+        fout = QTextStream(fh)            
+        fout.setCodec(CODEC)
+        #    0        1         2       3      4      5     6      7          8          9       10        11         12
+        # Latitude, Longitude, Bsolar, Btemp, Atemp, BWInd, BIR, AvgWind, AvgRainRate, ChemCOnc, AvgCO2, stationtype, site
+        fout<<"***STANDARD METEOROLOGICAL DATA  Header file for "<<stationtype<<"\n"
+        fout<<"Latitude Longitude"<<"\n"
+        fout<<'%-14.6f%-14.6f' %(weatherparameters[0],weatherparameters[1])<<"\n"
+        fout<<"^Daily Bulb T(1) ^Daily Wind(2) ^RainIntensity(3) ^Daily Conc^(4) ^Furrow(5) ^Rel_humid(6) ^CO2(7)"<<"\n"
+        fout<<'%-14d%-14d%-14d%-14d%-14d%-14d%-14d' %(0,wind_flag,0,0,0,rh_flag,co2_flag)<<"\n"   # hourly_flag
+        fout<<"Parameters for changing of units: BSOLAR BTEMP ATEMP ERAIN BWIND BIR "<<"\n"
+        fout<<"BSOLAR is 1e6/3600 to go from j m-2 h-1 to wm-2"<<"\n"
+        fout<<'%-14.1f%-14.1f%-14.4f%-14.1f%-14.1f%-14.1f' %(weatherparameters[2],weatherparameters[3],weatherparameters[4],0.1,weatherparameters[5],weatherparameters[6])<<"\n"
+        fout<<"Average values for the site"<<"\n"
+        fout<<header<<"\n"
+        fout<<val<<"\n"            
+    fh.close()
+    return hourly_flag, edate
+
+'''
+def WriteWeatherExpSys(experiment,treatmentname,stationtype,weather,field_path,tempVar,rainVar,CO2Var,inSeaDate):
+    print("Aaaaaaaaaaa")
+    print(inSeaDate)
+    # First create .wea file that stores the daily/hourly weather information for the simulation period
+    filename = "".join([os.path.join(field_path, stationtype),'.wea'])  
+
+    # getting weather data from sqlite
+    conn, c = openDB('crop.db')
+
+    # get date range for treatment
+    op_date_query = "select distinct odate from operations o, treatment t, experiment e where t.tid = o.o_t_exid and e.exid=t.t_exid and e.name=? and t.name = ?"
+    df_op_date = pd.read_sql(op_date_query,conn,params=[experiment,treatmentname])
+    df_op_date['odate'] = pd.to_datetime(df_op_date['odate'])
+    sdate = df_op_date['odate'].min() - timedelta(days=1)
+  
+
+    edate = pd.to_datetime(inSeaDate)
+
+    # Set the time to midnight (00:00:00)
+    edate = edate.replace(hour=0, minute=0, second=0)
+ 
+    diffInDays = (edate - sdate)/np.timedelta64(1,'D')
+        
+    weather_query = "select jday, date, hour, srad, tmax, tmin, temperature, rain, wind, rh, co2 from weather_data where stationtype=? and weather_id=? order by date" 
+    df_weatherdata_orig = pd.read_sql(weather_query,conn,params=[stationtype,weather])   
+    
+    # Convert date column to Date type
+    df_weatherdata_orig['date'] = pd.to_datetime(df_weatherdata_orig['date'])
+    firstDate = df_weatherdata_orig['date'].min()
+
+    lastDate = edate.replace(hour=0, minute=0, second=0) 
+
+    df_weatherdata = df_weatherdata_orig.copy()
+    mask = (df_weatherdata['date'] >= sdate) & (df_weatherdata['date'] <= edate)
+    df_weatherdata = df_weatherdata.loc[mask]
+   # print(df_weatherdata)
+    
+  #  df_weatherdata['date'] = df_weatherdata['date'].apply(lambda x: x.strftime('%Y-%m-%d') if not pd.isna(x) else None)
+    
+    #Check if dataframe is empty
+    if df_weatherdata.empty == True or (df_weatherdata.shape[0] + 1) < diffInDays:
+        return messageUser("Weather data is available for the data range of " + firstDate.strftime("%m/%d/%Y") + " and " + lastDate.strftime("%m/%d/%Y") + ". If this period covers \
+the date range of your simulation, there are data missing for this simulation period.")
+
+    # Check if data is daily or hourly
+    hourly_flag = 0
+    weather_length = df_weatherdata['date'].max() - df_weatherdata['date'].min()
+    num_records = len(df_weatherdata)
+    df_weatherdata['date'] = pd.to_datetime(df_weatherdata['date'],format='%Y-%m-%d')
+    weatherRoundDict = {"Radiation":2, "rain":2, "Wind":2, "rh":1, "CO2":1}
+    if(num_records > (weather_length.days+1)):
+        # header for hourly file
+        df_weatherdata = df_weatherdata.drop(columns=['tmax','tmin'])
+        weather_col_names = ["JDay", "Date", "hour", "Radiation", "temperature", "rain", "Wind", "rh", "CO2"] 
+        hourly_flag = 1
+        df_weatherdata = df_weatherdata.sort_values(by=['date','hour'])
+        # Sensitivity analyses temperature variance
+        if tempVar != 0:
+            df_weatherdata['temperature'] = df_weatherdata['temperature'] + float(tempVar)
+        weatherRoundDict['temperature'] = 1
+    else:
+        # header for daily file
+        df_weatherdata = df_weatherdata.drop(columns=['hour','temperature'])
+        weather_col_names = ["JDay", "Date", "Radiation", "Tmax","Tmin", "rain", "Wind", "rh", "CO2"] 
+        df_weatherdata = df_weatherdata.sort_values(by=['date'])
+        # Sensitivity analyses temperature variance
+        if tempVar != 0:
+            df_weatherdata['tmax'] = df_weatherdata['tmax'] + float(tempVar)
+            df_weatherdata['tmin'] = df_weatherdata['tmin'] + float(tempVar)
+        weatherRoundDict['tmax'] = 1
+        weatherRoundDict['tmin'] = 1
+
+    df_weatherdata['date'] = df_weatherdata['date'].dt.strftime('\'%m/%d/%Y\'')
+    df_weatherdata.columns = weather_col_names         
+
+    rh_flag = 1
+    if (df_weatherdata['rh'].isna().sum() > 0 or (df_weatherdata['rh'] == '').sum() > 0):
+        df_weatherdata = df_weatherdata.drop(columns=['rh'])
+        rh_flag = 0
+        del weatherRoundDict['rh']
+
+    co2_flag = 1  
+    if CO2Var != "None":
+        df_weatherdata['CO2'] = float(CO2Var)
+    else:
+        if (df_weatherdata['CO2'].isna().sum() > 0 or (df_weatherdata['CO2'] == '').sum() > 0):
+            df_weatherdata = df_weatherdata.drop(columns=['CO2'])
+            co2_flag = 0
+            del weatherRoundDict['CO2']
+
+    # Sensitivity analyses rain number is in %
+    if rainVar != 0:
+        df_weatherdata['rain'] = df_weatherdata['rain'] + (df_weatherdata['rain']*(float(rainVar)/100.0))         
+    else:
+        if (df_weatherdata['rain'].isna().sum() > 0 or (df_weatherdata['rain'] == '').sum() > 0):
+            df_weatherdata = df_weatherdata.drop(columns(['rain']))
+            del weatherRoundDict['rain']
+
+    wind_flag = 1
+    if (df_weatherdata['Wind'].isna().sum() > 0 or (df_weatherdata['Wind'] == '').sum() > 0):
+        df_weatherdata = df_weatherdata.drop(columns=['Wind'])
+        del weatherRoundDict['Wind']
+        wind_flag = 0
+
+    # the inputs for weather file comes from the weather flags. So we have to build that data stream 
+    # and then write
+    comment_value = ",".join(df_weatherdata.columns)
+    #write the comment first
+    with open(filename,'a') as ff:
+        ff.write(comment_value)
+        ff.write('\n')
+
+    df_weatherdata = df_weatherdata.round(weatherRoundDict)
+  #  print("%%%%%%%%%%%%%%%%%%%")
+#    print(df_weatherdata)
+    df_weatherdata.to_csv(filename,sep=' ',index=False,mode='a')
+
+    # Create .cli file
+    # Extracts weather information from the weather_meta table and write the text file.       
+    weatherparameters = read_weatherlongDB(stationtype) #returns a tuple
+    CODEC="UTF-8"
+    filename ="".join([os.path.join(field_path, stationtype), ".cli"])
+
+#        print("Debug: weatherparameters=",weatherparameters)
+#        print("Debug: filename=",filename)
+    fh = QFile(filename) 
+    header = ""
+    val = ""
+    if not fh.open(QIODevice.WriteOnly|QIODevice.Text):
+        print("Could not open file")
+    else:            
+        if(wind_flag == 0):
+            header = "wind"
+            val = str(weatherparameters[7])
+        # IRAV is only used with daily data and if there is no column of rain intensity values
+        if(hourly_flag == 0):
+            header = header + "    irav"
+            val = val + "    " + str(weatherparameters[8])
+        header = header + "    ChemConc"
+        val =  val + "    " + str(weatherparameters[9])
+        if(co2_flag == 0):
+            header = header + "    Co2"
+            if CO2Var == 'None':
                 val =  val + "    " + str(weatherparameters[10])
             # Seinsitivity analyses CO2 variance
             else:
@@ -476,8 +652,7 @@ the date range of your simulation, there are data missing for this simulation pe
         fout<<val<<"\n"            
     fh.close()
     return hourly_flag, edate
-
-
+'''
 def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_path,tempVar,rainVar,CO2Var,inSeaDate):
     # First create .wea file that stores the daily/hourly weather information for the simulation period
     filename = "".join([os.path.join(field_path, stationtype),'.wea'])   
@@ -535,7 +710,7 @@ def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_p
         weatherRoundDict['temperature'] = 1
     else:
         # header for daily file
-        df_weatherdata = df_weatherdata.drop(columns=['hour','temperature'])
+        df_weatherdata = df_weatherdata.drop(columns=(['hour','temperature']))
         weather_col_names = ["JDay", "Date", "Radiation", "Tmax","Tmin", "rain", "Wind", "rh", "CO2"] 
         df_weatherdata = df_weatherdata.sort_values(by=['date'])
         # Sensitivity analyses temperature variance
@@ -550,7 +725,7 @@ def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_p
 
     rh_flag = 1
     if (df_weatherdata['rh'].isna().sum() > 0 or (df_weatherdata['rh'] == '').sum() > 0):
-        df_weatherdata = df_weatherdata.drop(columns=['rh'])
+        df_weatherdata = df_weatherdata.drop(columns=(['rh']))
         rh_flag = 0
         del weatherRoundDict['rh']
 
@@ -559,7 +734,7 @@ def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_p
         df_weatherdata['CO2'] = float(CO2Var)
     else:
         if (df_weatherdata['CO2'].isna().sum() > 0 or (df_weatherdata['CO2'] == '').sum() > 0):
-            df_weatherdata = df_weatherdata.drop(columns=['CO2'])
+            df_weatherdata = df_weatherdata.drop(columns=(['CO2']))
             co2_flag = 0
             del weatherRoundDict['CO2']
 
@@ -568,7 +743,7 @@ def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_p
         df_weatherdata['rain'] = df_weatherdata['rain'] + (df_weatherdata['rain']*(float(rainVar)/100.0))         
     else:
         if (df_weatherdata['rain'].isna().sum() > 0 or (df_weatherdata['rain'] == '').sum() > 0):
-            df_weatherdata = df_weatherdata.drop(columns=['rain'])
+            df_weatherdata = df_weatherdata.drop(columns=(['rain']))
             del weatherRoundDict['rain']
 
     rain_edate_obj = datetime.strptime(inSeaDate, '%Y-%m-%d')
@@ -580,7 +755,7 @@ def WriteWeatherExpSysIrrig(experiment,treatmentname,stationtype,weather,field_p
 
     wind_flag = 1
     if (df_weatherdata['Wind'].isna().sum() > 0 or (df_weatherdata['Wind'] == '').sum() > 0):
-        df_weatherdata = df_weatherdata.drop(columns=['Wind'])
+        df_weatherdata = df_weatherdata.drop(columns=(['Wind']))
         del weatherRoundDict['Wind']
         wind_flag = 0
 
@@ -820,7 +995,7 @@ def WriteNitData(soilname,field_name,field_path,rowSpacing):
         fout = QTextStream(fh)            
         fout.setCodec(CODEC)            
         fout<<" *** SoilNit parameters for location"<<"***\n"  #prefix details comes here.
-        fout<<"ROW SPACING (m)"<<"\n"
+        fout<<"Full ROW SPACING (m)"<<"\n"
         fout<<MaxX<<"\n"
         fout<<"                             Potential rate constants:       Ratios and fractions:"<<"\n"
         fout<<"m      kh     kL       km       kn        kd             fe   fh    r0   rL    rm   fa    nq   cs"<<"\n"
@@ -944,7 +1119,7 @@ def WriteIrrigation(field_name,field_path, simulationname, o_t_exid):
     values = []
     for item in totIrrigation:
         values.append(item[1])
-  
+    print(values)
 
     NCountS = 0
     NCountH = 0
@@ -1022,6 +1197,8 @@ def WriteIrrigation(field_name,field_path, simulationname, o_t_exid):
             fout<<"Ponding Depth (cm)        Irrigation start date         and  hour/         Irrigation stop date         and hour/ -          one line for each application"<<"\n"
             for rrow in range(0, NCountH):
                 record_tuple = floodlistH[rrow]
+              #  print(record_tuple[0], record_tuple[1], record_tuple[2], record_tuple[3], record_tuple[4])
+             #   print(type(record_tuple[0]), type(record_tuple[1]), type(record_tuple[2]))
                 fout<<  "%-10.2f      '%-14s'         %-14s         '%-14s'         %-14s" %(record_tuple[0], record_tuple[1], record_tuple[2], record_tuple[3], record_tuple[4])<<"\n"
         else:
             fout<<"0"<<"\n"
@@ -1045,17 +1222,26 @@ def WriteIrrigation(field_name,field_path, simulationname, o_t_exid):
             
     irrfile.close()
 
-
+'''
 def WriteIrrigationExpSys(field_name,field_path,irrigationClass,simulationname, o_t_exid, irrExpSys):
-    # First create .irr file for the simulation period
+
+  #  print("MMMMMMM")
+  #  print(o_t_exid)
+  #  print(irrigationClass, irrExpSys)
+
+        # First create .irr file for the simulation period
     CODEC="UTF-8"
     filename = "".join([os.path.join(field_path,field_name), '.irr'])  
     irrfile = QFile(filename)
-  
+    
+
+   # print("#####################") 
+    
     totIrrigation = read_irrigationDB(o_t_exid)  # reading all the irrigation from irrigationDetails table
     values = []
     for item in totIrrigation:
         values.append(item[1])
+  #  print(values)
 
     NCountS = 0
     NCountH = 0
@@ -1103,7 +1289,7 @@ def WriteIrrigationExpSys(field_name,field_path,irrigationClass,simulationname, 
             fout<<"Date             AmtIrrAppl (mm/day)"<<"\n"
             for rrow in range(0, NCountS):
                 record_tuple = irrAmtlist[rrow]
-                fout << "'%-10s'      %-14d" %(record_tuple[0], record_tuple[1])<<"\n" 
+                fout << "'%-10s'      %-14d" %(record_tuple[0], record_tuple[1]*10)<<"\n" 
         else:
             fout<<"0"<<"\n"
             fout<<"No Irrigation \n"
@@ -1118,6 +1304,8 @@ def WriteIrrigationExpSys(field_name,field_path,irrigationClass,simulationname, 
             fout<<"Ponding Depth (cm)        Irrigation start date         and  hour/         Irrigation stop date         and hour/ -          one line for each application"<<"\n"
             for rrow in range(0, NCountH):
                 record_tuple = floodlistH[rrow]
+          #      print(record_tuple[0], record_tuple[1], record_tuple[2], record_tuple[3], record_tuple[4])
+           #     print(type(record_tuple[0]), type(record_tuple[1]), type(record_tuple[2]))
                 fout<<  "%-10.2f      '%-14s'         %-14s         '%-14s'         %-14s" %(record_tuple[0], record_tuple[1], record_tuple[2], record_tuple[3], record_tuple[4])<<"\n"
         else:
             fout<<"0"<<"\n"
@@ -1140,11 +1328,151 @@ def WriteIrrigationExpSys(field_name,field_path,irrigationClass,simulationname, 
             fout<<"No flood Irrigation"<<"\n"   
             
     irrfile.close()
+'''
+
+def WriteIrrigationExpSys(field_name, field_path, irrigationClass, simulationname, o_t_exid, irrExpSys):
+    """
+    Expert System irrigation writer.
+
+    irrExpSys is a tuple built in ExpertSysTab.WriteIni:
+        self.irrigationExpSys = (formatted_linSeaDate, formatted_inSeasonirr_cm)
+
+    This version:
+      - loads existing sprinkler events from DB (getIrrigationData)
+      - REMOVES any sprinkler event on the in‑season date
+      - ADDS the ES event for that date (irrExpSys)
+      - writes the .irr file with updated counts
+    """
+    CODEC = "UTF-8"
+    filename = os.path.join(field_path, field_name + ".irr")
+    irrfile = QFile(filename)
+
+    # Read planned irrigation from DB
+    totIrrigation = read_irrigationDB(o_t_exid)  # rows: (..., irrigationClass, ...)
+    values = [item[1] for item in totIrrigation]
+
+    NCountS = 0
+    NCountH = 0
+    NCountR = 0
+    irrAmtlist = []
+    floodlistH = []
+    floodlistR = []
+
+    # --- unpack ES tuple: (MM/DD/YYYY, depth_cm) ---
+    try:
+        es_date_str, es_depth_cm = irrExpSys
+    except Exception:
+        es_date_str, es_depth_cm = None, None
+
+    # --- collect lists from DB first ---
+    for item in values:
+        if item == 'Sprinkler':
+            irrAmtlist = getIrrigationData(simulationname, o_t_exid)  # [(date_str, depth_cm), ...]
+        elif item == 'FloodH':
+            floodlistH = getFloodHData(simulationname, o_t_exid)
+        elif item == 'FloodR':
+            floodlistR = getFloodRData(simulationname, o_t_exid)
+
+    # --- filter out any sprinkler event on ES in-season date, then append ES event ---
+    if irrAmtlist and es_date_str:
+        filtered = []
+        removed = 0
+        for d, amt in irrAmtlist:
+            if d == es_date_str:
+                removed += 1
+                continue
+            filtered.append((d, amt))
+        irrAmtlist = filtered
+        if removed > 0:
+            print(f"[WriteIrrigationExpSys] Removed {removed} planned sprinkler event(s) on {es_date_str} "
+                  "before adding ES irrigation in {filename}")
+
+    if es_date_str and es_depth_cm is not None:
+        irrAmtlist.append((es_date_str, es_depth_cm))
+
+    # keep chronological order
+    try:
+        irrAmtlist.sort(key=lambda x: datetime.strptime(x[0], "%m/%d/%Y"))
+    except Exception:
+        irrAmtlist.sort()
+
+    NCountS = len(irrAmtlist)
+    NCountH = len(floodlistH)
+    NCountR = len(floodlistR)
+
+    if not irrfile.open(QIODevice.WriteOnly | QIODevice.Text):
+        print("Could not open file")
+        return
+
+    fout = QTextStream(irrfile)
+    fout.setCodec(CODEC)
+    fout << "**** Script for irrigation\n"
+
+    # ---------------- Sprinkler block ----------------
+    fout << "[Sprinkler]\n"
+    fout << "Sprinkler irrigation\n"
+    fout << "Average irrigation rate (cm/hour)\n"
+    fout << "3\n"
+    fout << "Number of irrigation application\n"
+
+    if NCountS != 0:
+        fout << "%5d\n" % NCountS
+        fout << "Date             AmtIrrAppl (mm/day)\n"
+        for date_str, depth_cm in irrAmtlist:
+            # depth is stored in cm/day; model expects mm/day in the .irr
+            amt_mm = depth_cm * 10.0
+            fout << "'%-10s'      %-14d\n" % (date_str, amt_mm)
+    else:
+        fout << "0\n"
+        fout << "No Irrigation \n"
+
+    # ---------------- Flood_H block ----------------
+    fout << "[Flood_H]\n"
+    fout << "Flood irrigation as depth of water (cm)\n"
+    fout << "Number of flood irrigations as head (cm)\n"
+
+    if NCountH != 0:
+        fout << "%5d\n" % NCountH
+        fout << ("Ponding Depth (cm)        Irrigation start date         and  hour/         "
+                 "Irrigation stop date         and hour/ -          one line for each application\n")
+        for record_tuple in floodlistH:
+            fout << "%-10.2f      '%-14s'         %-14s         '%-14s'         %-14s\n" % (
+                record_tuple[0], record_tuple[1], record_tuple[2],
+                record_tuple[3], record_tuple[4]
+            )
+    else:
+        fout << "0\n"
+        fout << "No flood Irrigation\n"
+
+    # ---------------- Flood_R block ----------------
+    fout << "[Flood_R]\n"
+    fout << "Flood irrigation as rate applied (cm/day)\n"
+    fout << "Number of flood irrigations as rate\n"
+
+    if NCountR != 0:
+        fout << "%5d\n" % NCountR
+        fout << ("Ponding Depth (cm)       rate (cm/day)     Irrigation start date        and  hour/             "
+                 "Irrigation stop date        and hour/ -          one line for each application\n")
+        for record_tuple in floodlistR:
+            fout << "%-10.2f      %-14d       '%-14s'        %-14s         '%-14s'         %-14s\n" % (
+                record_tuple[0], record_tuple[1], record_tuple[2],
+                record_tuple[3], record_tuple[4], record_tuple[5]
+            )
+    else:
+        fout << "0\n"
+        fout << "No flood Irrigation\n"
+
+    irrfile.close()
+ 
 
 def WriteRunFile(cropname,soilname,field_name,cultivar,field_path,stationtype):
 #  Writes Run file with input data file names
 
-    CODEC="UTF-8"        
+    CODEC="UTF-8"  
+   # if isinstance(field_path, tuple):
+   #     field_path = field_path[0]
+   # print(field_path)
+    
     filename = "".join([field_path, "\\Run",  field_name, ".dat"])             
     fh = QFile(filename)
     hybridname = cultivar
@@ -1192,25 +1520,45 @@ def WriteRunFile(cropname,soilname,field_name,cultivar,field_path,stationtype):
         fh.close()
 
 
-def WriteManagement(cropname,experiment,treatmentname,field_name,field_path,rowSpacing):
-# Get data from operation, fertilizerOp and fertNutOp and Irrig_pivotOp
- 
+def WriteManagement(
+    cropname,
+    experiment,
+    treatmentname,
+    field_name,
+    field_path,
+    rowSpacing,
+    up_to_date=None,
+    use_modified_n=False,
+    modified_n_rows=None,  # list[(date_str 'MM/DD/YYYY', amount_kgN_ha, depth_cm)]
+):
+    """
+    Writes the *.man file (fertilizer, residue, tillage).
+
+    Parameters
+    ----------
+    cropname : str
+    experiment : str
+    treatmentname : str
+    field_name : str
+    field_path : str
+    rowSpacing : float
+    up_to_date : str or pandas.Timestamp or None
+        If not None, DB fertilizer operations with date > up_to_date are skipped.
+        (Used by Expert System for 'planned up to in‑season date'.)
+    use_modified_n : bool
+        If True, ignore DB fertilizer operations and build N section from
+        `modified_n_rows`.
+    modified_n_rows : list of tuples
+        Each tuple: (date_str 'MM/DD/YYYY', amount_kgN_ha, depth_cm).
+        Used only when use_modified_n is True.
+    """
     fertCount = 0
     PGRCount = 0
 
-    #use crop to find exid in experiment table
-    #use exid and treatmentname to find tid from treatment table
-    # use tid(o_t_exid) to find all the operations
-    operationList = []
-    fDepth = []
-    date = []
-    ammtT = []
-    lammtC = []
-    lammtN = []
-    mammtC = []
-    mammtN = []
+    # unified collection: (date_str, depth_cm, ammtT, lammtC, lammtN, mammtC, mammtN)
+    fert_records = []
     PGRDate = []
-    PGRChem =  []
+    PGRChem = []
     PGRAppMeth = []
     PGRBandwidth = []
     PGRAppRate = []
@@ -1218,134 +1566,183 @@ def WriteManagement(cropname,experiment,treatmentname,field_name,field_path,rowS
     SurfResInfo = []
     IrrigationInfo = []
 
-    exid = read_experimentDB_id(cropname,experiment)
-    tid = read_treatmentDB_id(exid,treatmentname)
+    exid = read_experimentDB_id(cropname, experiment)
+    tid = read_treatmentDB_id(exid, treatmentname)
     operationList = read_operationsDB_id(tid)
 
-    factor = (rowSpacing/2)/10000
-    # Surface residue type is set to be Rye as a default, if we have Surface Residue operation
-    # then we will use that nutrient.  At this point Rye is the only option.  The much file will 
-    # be generated even if a run doen't use surface residue, that is why we need to set this variable.
+    factor = (rowSpacing / 2.0) / 10000.0
     surfResType = "Rye"
     irrType = "No Irrigation"
 
-    for ii,jj in enumerate(operationList):
-        if jj[1] == "Fertilizer":   
-            fertInfo = readOpDetails(jj[0],jj[1])
-            #print(fertInfo)
-            for j in range(len(fertInfo)):
-                # Need to get date and depth only once
-                if j == 0:
-                    # Depth
-                    fDepth.append(fertInfo[j][4])
-                    # Date
-                    date.append(fertInfo[j][2])
+    # ----- Branch 1: full override from Expert System table -----
+    if use_modified_n and modified_n_rows:
+        for date_str, kgN_ha, depth_cm in modified_n_rows:
+            try:
+                ammtT = float(kgN_ha) * factor * 100.0  # same conversion as original code
+            except Exception:
+                ammtT = 0.0
+            fert_records.append(
+                (date_str, float(depth_cm), ammtT, 0.0, 0.0, 0.0, 0.0)
+            )
+        fertCount = len(fert_records)
 
-                # FertilizationClass = Fertilizer-N, the ammtT is the ammount of Nitrogen 
-                if fertInfo[j][3] == "Fertilizer-N":
-                    ammtT.append(fertInfo[j][6]*factor*100)
-                    lammtC.append(0)
-                    lammtN.append(0)
-                    mammtC.append(0)
-                    mammtN.append(0)
-                elif fertInfo[j][3] == "Manure":
-                    if j == 0:
-                        ammtT.append(0)
-                        lammtC.append(0)
-                        lammtN.append(0)
-                    if fertInfo[j][5] == "Carbon (C)":
-                        mammtC.append(fertInfo[j][6]*factor*100)
-                    if fertInfo[j][5] == "Nitrogen (N)":
-                        mammtN.append(fertInfo[j][6]*factor*100)
-                elif fertInfo[j][3] == "Litter":
-                    if j == 0:
-                        ammtT.append(0)
-                        mammtC.append(0)
-                        mammtN.append(0)
-                    if fertInfo[j][5] == "Carbon (C)":
-                        lammtC.append(fertInfo[j][6]*factor*100)
-                    if fertInfo[j][5] == "Nitrogen (N)":
-                        lammtN.append(fertInfo[j][6]*factor*100)
-            fertCount=fertCount+1
-        if jj[1] == "Plant Growth Regulator":
-            PGRInfo = readOpDetails(jj[0],jj[1])
-            PGRDate.append(PGRInfo[0][2])
-            PGRChem.append(PGRInfo[0][3])
-            PGRAppMeth.append(PGRInfo[0][8])
-            PGRBandwidth.append(PGRInfo[0][5])
-            PGRAppRate.append(PGRInfo[0][6])
-            PGRAppUnit.append(PGRInfo[0][9])
-            PGRCount=PGRCount+1
-        if jj[1] == "Surface Residue":
-            SurfResInfo = readOpDetails(jj[0],jj[1])
-            surfResType = SurfResInfo[0][3]
-        if jj[1] == "Tillage":
-            TillageInfo = readOpDetails(jj[0],jj[1])
-            if TillageInfo[0][3] == "Moldboard plow":
-                tillDepth = 15
-            elif TillageInfo[0][3] == "Chisel plow":
-                tillDepth = 10
-            elif TillageInfo[0][3] == "Vertical tillage":
-                tillDepth = 5
-       # if jj[1] == "Irrigation":
-      #      IrrigationInfo = readOpDetails(jj[0],jj[1])
-       #     irrType = IrrigationInfo[0][3]
-        #    print(IrrigationInfo)
-
-    date = sorted(date)
-   
-    # Write *.MAN file
-    CODEC="UTF-8"
-    filename = field_path+"\\"+field_name+".man"                
-    fh = QFile(filename)
-    placeholder = 0
-
-    if not fh.open(QIODevice.WriteOnly|QIODevice.Text):
-        print("Could not open file")
+    # ----- Branch 2: use DB operations (planned run or "keep planned") -----
     else:
-        fout = QTextStream(fh)            
-        fout.setCodec(CODEC)
-        fout<<"*** Script for management practices fertilizer, residue and tillage\n"
-        fout<<"[N Fertilizer]\n"
-        fout<<"****Script for chemical application module  *******mg/cm2= kg/ha* 0.01*rwsp*eomult*100\n"
-        fout<<"Number of Fertilizer applications (max=25) mappl is in total mg N applied to grid (1 kg/ha = 1 mg/m2/width of application) application divided by width of grid in cm is kg ha-1\n"                    
-        fout<<'%-14d' %(fertCount)<<"\n"
-        fout<<"mAppl is manure, lAppl is litter. Apply as mg/cm2 of slab same units as N\n"
-        fout<<"tAppl(i)  AmtAppl(i) depth(i) lAppl_C(i) lAppl_N(i)  mAppl_C(i) mAppl_N(i)  (repeat these 3 lines for the number of fertilizer applications)\n"
-        for j in range(len(date)):
-            fout<<"'"<<date[j]<<"' "'%-14.6f%-14.6f%-14.6f%-14.6f%-14.6f%-14.6f' %(ammtT[j],fDepth[j],lammtC[j],lammtN[j],mammtC[j],mammtN[j])<<"\n"
-        if cropname == "cotton":
-            fout<<"[PGR]"<<"\n"
-            fout<<"Number of PGR applications; 0: No PGR"<<"\n"
-            fout<<'%-14d' %(PGRCount)<<"\n"
-            fout<<"pgrDate		Brand	Appl_Method	Band_Width Appl_Rate	Appl_Unit"<<"\n"
-            for j in range(len(PGRDate)):
-                fout<<"'"<<PGRDate[j]<<"' '"<<PGRChem[j]<<"' "'%-14d%-14.6f%-14.6f%-14d' %(PGRAppMeth[j],PGRBandwidth[j],PGRAppRate[j],PGRAppUnit[j])<<"\n"
-        # Surface Residue
-        fout<<"[Residue]"<<"\n"
-        fout<<"****Script for residue/mulch application module"<<"\n"
-        fout<<"**** Residue amount can be thickness ('t') or mass ('m')   ***"<<"\n"
-        fout<<"application  1 or 0, 1(yes) 0(no)"<<"\n"
-        if not SurfResInfo:
-            fout<<"0\n"
+        # normalize up_to_date for comparisons (None or Timestamp)
+        if up_to_date is not None:
+            try:
+                up_to_dt = pd.to_datetime(up_to_date)
+            except Exception:
+                up_to_dt = None
         else:
-            SurfResAmt = SurfResInfo[0][5] if SurfResInfo[0][4] != 'Mass (kg/ha)' else SurfResInfo[0][5]/1000
-            fout<<"1"<<"\n"
-            fout<<"tAppl_R (i)    't' or 'm'      Mass (gr/m2) or thickness (cm)    vertical layers"<<"\n"
-            fout<<"---either thickness  or Mass"<<"\n"
-            fout<<"'"<<SurfResInfo[0][2]<<"'  '"<<SurfResInfo[0][4][0].lower()<<"'  "'%-14.6f' %(SurfResAmt)<<"       3"<<"\n"
-        # Tillage
-        fout<<"[Tillage]"<<"\n"
-        fout<<"1: Tillage, 0: No till"<<"\n"
-        if TillageInfo[0][3] == "No tillage":
-            fout<<"0"<<"\n"
-        else:
-            fout<<"1"<<"\n"
-            fout<<"Till Date Till Depth (cm)"<<"\n"
-            fout<<"'"<<TillageInfo[0][2]<<"'  "'%-14.6f' %(tillDepth)<<"\n"
-        fh.close()
+            up_to_dt = None
 
-        return surfResType# irrType
+        for ii, jj in enumerate(operationList):
+            op_name = jj[1] if len(jj) > 1 else None
+            op_date_str = jj[2] if len(jj) > 2 else None
+
+            # optional cutoff for fertilizer operations
+            if op_name == "Fertilizer" and up_to_dt is not None and op_date_str:
+                try:
+                    op_dt = pd.to_datetime(op_date_str)
+                    if op_dt > up_to_dt:
+                        continue
+                except Exception:
+                    pass
+
+            if op_name == "Fertilizer":
+                fertInfo = readOpDetails(jj[0], jj[1])
+                op_depth = None
+                op_date = None
+                op_ammtT = 0.0
+                op_lammtC = 0.0
+                op_lammtN = 0.0
+                op_mammtC = 0.0
+                op_mammtN = 0.0
+
+                for j in range(len(fertInfo)):
+                    if j == 0:
+                        op_depth = fertInfo[j][4]
+                        op_date = fertInfo[j][2]
+
+                    if fertInfo[j][3] == "Fertilizer-N":
+                        op_ammtT += fertInfo[j][6] * factor * 100.0
+                    elif fertInfo[j][3] == "Manure":
+                        if fertInfo[j][5] == "Carbon (C)":
+                            op_mammtC += fertInfo[j][6] * factor * 100.0
+                        if fertInfo[j][5] == "Nitrogen (N)":
+                            op_mammtN += fertInfo[j][6] * factor * 100.0
+                    elif fertInfo[j][3] == "Litter":
+                        if fertInfo[j][5] == "Carbon (C)":
+                            op_lammtC += fertInfo[j][6] * factor * 100.0
+                        if fertInfo[j][5] == "Nitrogen (N)":
+                            op_lammtN += fertInfo[j][6] * factor * 100.0
+
+                if op_date is not None and op_depth is not None:
+                    fert_records.append(
+                        (op_date, op_depth, op_ammtT, op_lammtC, op_lammtN, op_mammtC, op_mammtN)
+                    )
+                    fertCount += 1
+
+            if op_name == "Plant Growth Regulator":
+                PGRInfo = readOpDetails(jj[0], jj[1])
+                PGRDate.append(PGRInfo[0][2])
+                PGRChem.append(PGRInfo[0][3])
+                PGRAppMeth.append(PGRInfo[0][8])
+                PGRBandwidth.append(PGRInfo[0][5])
+                PGRAppRate.append(PGRInfo[0][6])
+                PGRAppUnit.append(PGRInfo[0][9])
+                PGRCount += 1
+
+            if op_name == "Surface Residue":
+                SurfResInfo = readOpDetails(jj[0], jj[1])
+                surfResType = SurfResInfo[0][3]
+
+            if op_name == "Tillage":
+                TillageInfo = readOpDetails(jj[0], jj[1])
+                if TillageInfo[0][3] == "Moldboard plow":
+                    tillDepth = 15.0
+                elif TillageInfo[0][3] == "Chisel plow":
+                    tillDepth = 10.0
+                elif TillageInfo[0][3] == "Vertical tillage":
+                    tillDepth = 5.0
+                else:
+                    tillDepth = 0.0
+
+    # sort fertilizer applications chronologically
+    if fert_records:
+        try:
+            fert_records.sort(key=lambda rec: pd.to_datetime(rec[0]))
+        except Exception:
+            fert_records.sort(key=lambda rec: rec[0])
+
+    CODEC = "UTF-8"
+    filename = os.path.join(field_path, field_name + ".man")
+    fh = QFile(filename)
+
+    if not fh.open(QIODevice.WriteOnly | QIODevice.Text):
+        print("Could not open file")
+        return surfResType
+
+    fout = QTextStream(fh)
+    fout.setCodec(CODEC)
+    fout << "*** Script for management practices fertilizer, residue and tillage\n"
+    fout << "[N Fertilizer]\n"
+    fout << "****Script for chemical application module  *******mg/cm2= kg/ha* 0.01*rwsp*eomult*100\n"
+    fout << "Number of Fertilizer applications (max=25) mappl is in total mg N applied to grid (1 kg/ha = 1 mg/m2/width of application) application divided by width of grid in cm is kg ha-1\n"
+    fout << "%-14d\n" % fertCount
+    fout << "mAppl is manure, lAppl is litter. Apply as mg/cm2 of slab same units as N\n"
+    fout << "tAppl(i)  AmtAppl(i) depth(i) lAppl_C(i) lAppl_N(i)  mAppl_C(i) mAppl_N(i)  (repeat these 3 lines for the number of fertilizer applications)\n"
+
+    for d_str, depth, aT, lC, lN, mC, mN in fert_records:
+        fout << "'" << d_str << "' " \
+             << "%-14.6f%-14.6f%-14.6f%-14.6f%-14.6f%-14.6f\n" % (
+                    aT, depth, lC, lN, mC, mN
+                )
+
+    if cropname == "cotton":
+        fout << "[PGR]\n"
+        fout << "Number of PGR applications; 0: No PGR\n"
+        fout << "%-14d\n" % PGRCount
+        fout << "pgrDate\t\tBrand\tAppl_Method\tBand_Width Appl_Rate\tAppl_Unit\n"
+        for j in range(len(PGRDate)):
+            fout << "'" << PGRDate[j] << "' '" << PGRChem[j] << "' " \
+                 << "%-14d%-14.6f%-14.6f%-14d\n" % (
+                        PGRAppMeth[j],
+                        PGRBandwidth[j],
+                        PGRAppRate[j],
+                        PGRAppUnit[j]
+                    )
+
+    # Surface Residue
+    fout << "[Residue]\n"
+    fout << "****Script for residue/mulch application module\n"
+    fout << "**** Residue amount can be thickness ('t') or mass ('m')   ***\n"
+    fout << "application  1 or 0, 1(yes) 0(no)\n"
+    if not SurfResInfo:
+        fout << "0\n"
+    else:
+        SurfResAmt = SurfResInfo[0][5] if SurfResInfo[0][4] != 'Mass (kg/ha)' else SurfResInfo[0][5] / 1000.0
+        fout << "1\n"
+        fout << "tAppl_R (i)    't' or 'm'      Mass (gr/m2) or thickness (cm)    vertical layers\n"
+        fout << "---either thickness  or Mass\n"
+        fout << "'" << SurfResInfo[0][2] << "'  '" \
+             << SurfResInfo[0][4][0].lower() << "'  " \
+             << "%-14.6f       3\n" % SurfResAmt
+
+    # Tillage
+    fout << "[Tillage]\n"
+    fout << "1: Tillage, 0: No till\n"
+    if 'TillageInfo' not in locals() or TillageInfo[0][3] == "No tillage":
+        fout << "0\n"
+    else:
+        fout << "1\n"
+        fout << "Till Date Till Depth (cm)\n"
+        fout << "'" << TillageInfo[0][2] << "'  " \
+             << "%-14.6f\n" % tillDepth
+
+    fh.close()
+    return surfResType
 
 def irrigationInfo(cropname,experiment,treatmentname):
     operationList = []

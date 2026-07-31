@@ -9,9 +9,10 @@ import pandas as pd
 from datetime import date, timedelta, datetime
 from time import mktime
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt  # <--- Added correct import for Qt constants
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, QPushButton, \
                             QSpacerItem, QSizePolicy, QHeaderView, QRadioButton, QButtonGroup, QFrame, QFormLayout, QScrollArea, QCheckBox, \
-                            QGridLayout, QGroupBox, QHeaderView,  QMenu, QAction
+                            QGridLayout, QGroupBox, QHeaderView,  QMenu, QAction, QTextEdit, QTreeWidgetItem # <--- Added missing classes
 from CustomTool.custom1 import *
 from CustomTool.UI import *
 from DatabaseSys.Databasesupport import *
@@ -28,8 +29,8 @@ from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 from PyQt5.QtGui import QPixmap
 
-global classimDir
-global runDir
+#global classimDir
+#global runDir
 
 classimDir = getClassimDir()
 runDir = os.path.join(classimDir,'run')
@@ -102,41 +103,53 @@ class RotOutput_Widget(QWidget):
         self.vl1.addWidget(self.tab_summary)
         self.vl1.addWidget(self.rotationoutVidlabel)
         self.vl1.addWidget(self.helpcheckbox)
-        self.table2 = QTableWidget()
 
+        self.table2 = QTableWidget()
         self.plotoutput = QPushButton("Select Rotation")
         self.deleteSim = QPushButton("Delete Rotation")
+
         self.buttonhlayout = QVBoxLayout()
         self.buttonhlayout.addWidget(self.plotoutput)
         self.buttonhlayout.addWidget(self.deleteSim)
         self.buttonhlayout.addStretch(1)
-        self.display1 = QTabWidget()
-        self.statistic_toollist = ['hourly','daily'] 
 
+        self.display1 = QTabWidget()
+        self.statistic_toollist = ['hourly', 'daily']
+
+        # Table setup
         self.table2.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
-        self.table2.setFixedHeight(100)     
-        self.table2.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        self.table2.setFixedHeight(150)                      # or whatever height you prefer
+        self.table2.setSizePolicy(QSizePolicy.Expanding,
+                                  QSizePolicy.Fixed)
+        self.table2.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table2.setAlternatingRowColors(True)
+        self.table2.verticalHeader().hide()
+
         self.error_tuplelist = []
         self.populate()
-        self.table2.setHorizontalHeaderLabels(['RotID','Site','Station Name','Weather','Soil','SimID','Treatment','Start\nYear','End\nYear',
-                                               'Water\nStress','Nitrogen\nStress','Temp\nVariance (oC)','Rain\nVariance (%)','CO2\nVariance (ppm)'])
-        self.table2.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(2,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(4,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(5,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(6,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(7,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(8,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(9,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(10,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(11,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(12,QHeaderView.ResizeToContents)
-        self.table2.horizontalHeader().setSectionResizeMode(13,QHeaderView.ResizeToContents)
-        self.table2.verticalHeader().hide()       
-        self.table2.resizeColumnsToContents()  
+
+        headers = [
+            'RotID', 'Site', 'Station Name', 'Weather', 'Soil',
+            'SimID', 'Treatment', 'Start\nYear', 'End\nYear',
+            'Water\nStress', 'Nitrogen\nStress', 'Temp\nVariance (oC)',
+            'Rain\nVariance (%)', 'CO2\nVariance (ppm)'
+        ]
+        self.table2.setColumnCount(len(headers))
+        self.table2.setHorizontalHeaderLabels(headers)
+
+        header = self.table2.horizontalHeader()
+        # Default: size to contents
+        for col in range(len(headers)):
+            header.setSectionResizeMode(col, QHeaderView.ResizeToContents)
+
+        # Let the “Treatment” column (index 6) stretch with the window
+        header.setSectionResizeMode(6, QHeaderView.Stretch)
+
+        # Use its content width as a minimum so it never shrinks below that
+        self.table2.resizeColumnsToContents()
+        col6_width = header.sectionSize(6)
+        
+
         self.plotoutput.clicked.connect(self.on_click_table_widget)
         self.deleteSim.clicked.connect(self.on_deletebuttonclick)
 
@@ -1080,7 +1093,7 @@ class RotOutput_Widget(QWidget):
         # Creates dictionaries based on crop type
         self.varSoilwhn2DDescDict, self.varSoilwhn2DDescUnitDict, self.varSoilwhn2DFuncDict = genDictOutput(self.cropArr,"soilwhn2D",1)
 
-        self.soilwhnTab.fig = plt.figure()
+        self.soilwhnTab.fig = matplotlib.figure.Figure() #plt.figure()
         self.soilwhnTab.canvas = FigureCanvas(self.soilwhnTab.fig)
         self.soilwhnTab.groupBox = QGroupBox()
 
@@ -1347,7 +1360,7 @@ class RotOutput_Widget(QWidget):
         # Creates dictionaries based on crop type
         self.varRootDescDict, self.varRootDescUnitDict, self.varRootFuncDict = genDictOutput(self.cropArr,"root",1)
 
-        self.rootTab.fig = plt.figure()
+        self.rootTab.fig = matplotlib.figure.Figure() #plt.figure()
         self.rootTab.canvas = FigureCanvas(self.rootTab.fig)
         self.rootTab.groupBox = QGroupBox()
 

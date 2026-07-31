@@ -54,7 +54,7 @@ class About_Widget(QTabWidget):
         verInfo = getClassimVersion()
 
         self.summary = '''
-<p>CLASSIM Version ''' + str(verInfo[0]) + '''</p>
+<p>CLASSIM Version ''' + str(verInfo) + '''</p>
 <p><u>Database</u><br>crop.db version: ''' + str(cropDB['user_version'][0]) + '''<br>cropOutput.db version: ''' + str(cropOutDB['user_version'][0]) + '''</p>
 <p>If you have any suggestions or questions, please email ARS-CLASSIM-Help@usda.gov.</p>
 <p><b>Development Team<b></p>

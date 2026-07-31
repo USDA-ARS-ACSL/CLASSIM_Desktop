@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, \
-                            QPushButton, QSpacerItem, QSizePolicy, QMenu, QHeaderView, QCheckBox, QGridLayout, QHeaderView
+                            QPushButton, QSpacerItem, QSizePolicy, QMenu, QHeaderView, QCheckBox, QGridLayout, QHeaderView, \
+                            QShortcut, QApplication
 from PyQt5.QtCore import pyqtSlot
 from CustomTool.custom1 import *
 from CustomTool.UI import *
@@ -115,7 +116,16 @@ UPDATE/SAVE button.")
         self.soilselectionlabel= QLabel("Soil Properties")
         self.soiltable1 = QTableWidget()
         self.soiltable1.verticalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
-        self.soiltable1.verticalHeader().customContextMenuRequested.connect(self.soiltableverticalheader_popup)
+        self.soiltable1.verticalHeader().customContextMenuRequested.connect(self.soiltableverticalheader_popup)        
+        # After creating self.soiltable1
+        self.soiltable1.viewport().installEventFilter(self)
+
+        # Enable copy / paste on soil table (attach to viewport so editors do not steal it)
+        self.copyShortcut = QShortcut(QtGui.QKeySequence.Copy, self.soiltable1.viewport())
+        self.copyShortcut.activated.connect(self.copy_selection_to_clipboard)
+        self.pasteShortcut = QShortcut(QtGui.QKeySequence.Paste, self.soiltable1.viewport())
+        self.pasteShortcut.activated.connect(self.paste_from_clipboard_into_table)
+
         self.soilselectionlabel.setVisible(False)
         self.soiltable1.setVisible(False)
         self.sitecombo.setVisible(False)
@@ -644,6 +654,87 @@ UPDATE/SAVE button.")
 
         if action == deletethisrowaction:
             self.deletethisrow()
+
+
+
+    def eventFilter(self, obj, event):
+        # Intercept Ctrl+V on the table viewport and route it to our paste handler
+        if obj is self.soiltable1.viewport() and event.type() == QtCore.QEvent.KeyPress:
+            key_event = event
+            if key_event.matches(QtGui.QKeySequence.Paste):
+                self.paste_from_clipboard_into_table()
+                return True  # do not let the editor handle it
+        return super(Soil_Widget, self).eventFilter(obj, event)
+
+
+            
+    def copy_selection_to_clipboard(self):
+        """
+        Copy selected cells in soiltable1 as tab-separated values (TSV),
+        compatible with Excel and other spreadsheets.
+        """
+        sel_ranges = self.soiltable1.selectedRanges()
+        if not sel_ranges:
+            return
+
+        r = sel_ranges[0]
+        rows = []
+        for row in range(r.topRow(), r.bottomRow() + 1):
+            cols = []
+            for col in range(r.leftColumn(), r.rightColumn() + 1):
+                if col == 5:
+                    # Combo column: read from the QComboBox widget
+                    widget = self.soiltable1.cellWidget(row, col)
+                    cols.append(widget.currentText() if widget is not None else "")
+                else:
+                    item = self.soiltable1.item(row, col)
+                    cols.append(item.text() if item is not None else "")
+            rows.append("\t".join(cols))
+
+        QApplication.clipboard().setText("\n".join(rows))                                                                   
+
+    def paste_from_clipboard_into_table(self):
+        """
+        Paste TSV/CSV-style text (e.g. from Excel) into soiltable1,
+        starting at the current cell; adds rows if necessary.
+        """
+        start_row = self.soiltable1.currentRow()
+        start_col = self.soiltable1.currentColumn()
+        if start_row < 0 or start_col < 0:
+            return
+
+        text = QApplication.clipboard().text()
+        if not text:
+            return
+
+        lines = [ln for ln in text.splitlines() if ln.strip() != ""]
+        for r_off, line in enumerate(lines):
+            cols = line.split("\t")
+            row = start_row + r_off
+            if row >= self.soiltable1.rowCount():
+                self.soiltable1.insertRow(self.soiltable1.rowCount())
+
+            for c_off, cell_text in enumerate(cols):
+                col = start_col + c_off
+                if col >= self.soiltable1.columnCount():
+                    break
+
+                value = cell_text.strip()
+
+                # Unit Type combo column
+                if col == 5:
+                    combo = self.soiltable1.cellWidget(row, col)
+                    if isinstance(combo, QComboBox):
+                        idx = combo.findText(value)
+                        if idx >= 0:
+                            combo.setCurrentIndex(idx)
+                    continue
+
+                item = self.soiltable1.item(row, col)
+                if item is None:
+                    item = QTableWidgetItem()
+                    self.soiltable1.setItem(row, col, item)
+                item.setText(value)
 
 
     def importfaq(self, thetabname=None):        

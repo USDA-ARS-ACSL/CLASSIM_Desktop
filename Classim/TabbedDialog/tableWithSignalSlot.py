@@ -120,6 +120,7 @@ class Tabless_Widget(QTableWidget):
         self.savebutton1 = QPushButton("Ok")
         tmp_str2 = tree_str + " Treatment node added in the left panel. All operations are added. Please \
 check their operations dates and correct them if needed."
+        print(tmp_str2)
         self.summary.setText(tmp_str2)  
         self.sitetable1.clearContents()
         self.sitetable1.setRowCount(0) # necessary. It will clean the table internally     
@@ -170,8 +171,8 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
         self.sitetable1.reset()
         self.sitetable1.clearContents()
         self.sitetable1.setRowCount(0) # necessary. It will clean the table internally             
-        self.sitetable1.setRowCount(5)
-        self.sitetable1.setColumnCount(2)        
+        self.sitetable1.setRowCount(4)
+        self.sitetable1.setColumnCount(3)        
         self.show_table_rows()       
 
         header = self.sitetable1.horizontalHeader()
@@ -180,11 +181,15 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
 
         self.sitetable1.horizontalHeader().hide()
         self.sitetable1.verticalHeader().hide()
-        self.sitetable1.setSpan(0,0,3,2)
+        self.sitetable1.setSpan(0,0,3,3)
         self.sitetable1.setCellWidget(0,0,self.summary1)
-        self.sitetable1.setItem(3,0,QTableWidgetItem("Enter New Experiment Name"))
+
+        # Use QLabel instead of QTableWidgetItem for the prompt
+        self.experimentPromptLabel = QLabel("Enter New Experiment Name")
+        self.sitetable1.setCellWidget(3,0, self.experimentPromptLabel)
+
         self.sitetable1.setCellWidget(3,1,self.experimentname)
-        self.sitetable1.setCellWidget(4,1,self.savebutton1)       
+        self.sitetable1.setCellWidget(3,2,self.savebutton1)       
         self.sitetable1.setVisible(True) 
         self.sitetable1.resizeColumnsToContents();
         self.sitetable1.resizeRowsToContents();
@@ -361,6 +366,7 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                             operationSummary += str(op_row[0]) + " Date: " + str(op_row[1]) + "<br>"
                         else:
                             initCond = readOpDetails(op_row[2],op_row[0])
+                         #   print(initCond)
                             loc = "Middle"
                             if(initCond[0][8]  == 0.5):
                                 loc = "Left"
@@ -394,10 +400,14 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                         operationSummary += str(op_row[0]) + " Date: " + str(op_row[1]) + "<br>" + \
                                             "Residue Type: " + str(surfRes[0][3]) + ", " + str(surfRes[0][4]) + ": " + str(surfRes[0][5]) + "<br>"
                     elif(op_row[0] == "Irrigation"):
+                        print("RRRRRRRR")
+                      #  print(op_row[2],op_row[0])
                         print(op_row)
                         irrig = readOpDetails(op_row[2],op_row[0])
                         
                         for j in range(len(irrig)):
+                          #  print(j)
+                          #  operationSummary +=  "Irrigation Date: " + str(op_row[1]) + "<br>"
                             if irrig[j][2] == 'Sprinkler':
                                 operationSummary +=  "Irrigation Date: " + str(irrig[j][3]) + "<br>"
                                 operationSummary += " -- " + str(irrig[j][2]) + ": " + str(irrig[j][4]) + " cm/day<br>"
@@ -406,6 +416,7 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                                 operationSummary += " -- " + str(irrig[j][2]) + ": " + str(irrig[j][3]) + " cm/day<br>"
                     else:
                         operationSummary += op_row[0] + " Date: " + str(op_row[1]) + "<br>"
+
             conn.close()
             return operationSummary
    
@@ -630,6 +641,8 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
         times2 = [QTime(hour, minute).toString("HH:mm") for hour in range(24) for minute in range(0, 60, 60)]
         self.endTimelabeledit.addItems(times2)
   
+
+
         self.sitetable1.clearContents()
         self.sitetable1.setRowCount(0)
         self.sitetable1.clear()
@@ -766,7 +779,7 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
          Will show the existing operation. Will allow  to modify its values.
          Create the field table. Query the OPERATION table and get the flag values
         """
-
+        
         self.treatmentname = strval1
         self.experimentname = strval2
         self.cropname = strval3
@@ -871,16 +884,21 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
         self.startTimelabel = QLabel("Start Time")
         self.startTimelabeledit = QComboBox()
         times1 = [QTime(hour, minute).toString("HH:mm") for hour in range(24) for minute in range(0, 60, 60)]
+       
         self.startTimelabeledit.addItems(times1)
-           
+   
+      
+        
         self.endDatelabel = QLabel("End Date")
         self.endDatelabeledit = QDateEdit()
+
         
         self.endTimelabel = QLabel("End Time")
         self.endTimelabeledit = QComboBox()
         times2 = [QTime(hour, minute).toString("HH:mm") for hour in range(24) for minute in range(0, 60, 60)]
         self.endTimelabeledit.addItems(times2)
    
+
         self.sitetable1.clearContents()
         self.sitetable1.setRowCount(0) # necessary. It will clean the table internally     
         self.sitetable1.clear()
@@ -965,7 +983,9 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
         self.sitetable1.resizeColumnsToContents();
         self.sitetable1.resizeRowsToContents();
         self.sitetable1.setShowGrid(False)
-    
+
+
+        
         if self.record[0][1] == 'Irrigation':
             if self.record[0][2] == 'Sprinkler':
                 if self.record[0][3] != '' and self.record[0][3] is not None:
@@ -999,6 +1019,8 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                     endTime_object1 = QTime(hours3,minutes3)
                     endTime_string1 = endTime_object1.toString("HH:mm")
                     self.endTimelabeledit.setCurrentText(endTime_string1)
+
+
                     
             elif  self.record[0][2] == 'FloodR':       
                 if self.record[0][5] != '' and self.record[0][5] is not None:    
@@ -1023,6 +1045,8 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                     endTime_object2 = QTime(hours4,minutes4)
                     endTime_string2 = endTime_object2.toString("HH:mm")
                     self.endTimelabeledit.setCurrentText(endTime_string2)
+                
+
             else:
                 pass
 
@@ -1032,6 +1056,7 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
             record_parts_sim = self.record[0][2].split("/")
             currentYear_sim= record_parts_sim[2]
             self.calendar.setDate(QDate(int(currentYear_sim),int(record_parts_sim[0]),int(record_parts_sim[1])))
+
 
             self.readcropvarietylist  = read_cultivar_DB(self.cropname)            
             for record2 in self.readcropvarietylist:
@@ -1308,6 +1333,19 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
             self.sitetable1.showRow(19)
             
         elif self.operationname == "Irrigation":
+           # print("CCCCCCC")
+          #  print(self.record)
+          #  print(self.record[0][3])
+            
+          #  if self.record[0][2] == 'Sprinkler':
+           #     self.irrgClass = read_irrigationClass()        
+           #     self.comboirrigationType.clear()
+           #     self.comboirrigationType.addItem("Select Irrigation")
+            #    for irrigation in self.irrgClass:
+	       #         self.comboirrigationType.addItem(irrigation)
+           #     self.comboirrigationType.setCurrentIndex(self.comboirrigationType.findText(self.record[0][2]))
+           #     self.comboirrigationType.setEnabled(False)
+           # else:
             self.irrgClass = read_irrigationClass()        
             self.comboirrigationType.clear()
             self.comboirrigationType.addItem("Select Irrigation")
@@ -1337,8 +1375,12 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
             self.sitetable1.hideRow(18)
             self.sitetable1.hideRow(19)            
             self.sitetable1.hideRow(21)
+          #  self.sitetable1.showRow(22)
+            print(self.record)
 
             for j in range(len(self.record)):
+      #         print("AAAAA")
+                print(j)
                 if self.record[j][2] == 'Sprinkler':
                     self.sitetable1.showRow(22)
                     self.sitetable1.hideRow(23)
@@ -1360,7 +1402,11 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                         self.sitetable1.showRow(28)
                         self.sitetable1.showRow(29)
                         self.pondDepthlabeledit.setText(str(self.record[j][3]))
-
+                       
+              #          self.sitetable1.setCellWidget(25,1,self.startDatelabeledit)
+                    #    self.sitetable1.setCellWidget(26,1,self.startTimelabeledit)
+                     #   self.sitetable1.setCellWidget(27,1,self.endDatelabeledit)
+                     #   self.sitetable1.setCellWidget(28,1,self.endTimelabeledit)
                                 
                 elif(self.record[j][2] == "FloodR"): # or self.record[j][3] == "FloodR"):
                         self.sitetable1.hideRow(1)
@@ -1374,7 +1420,12 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
                         self.sitetable1.showRow(29)
                         self.pondDepthlabeledit.setText(str(self.record[j][3]))
                         self.rateIrrilabeledit.setText(str(self.record[j][4]))
-       
+                   #    print(self.record[j][0], self.record[j][1],self.record[j][2],self.record[j][3],self.record[j][4],self.record[j][5])      
+                     #   self.sitetable1.setCellWidget(25,1,self.startDatelabeledit)
+                   #     self.sitetable1.setCellWidget(26,1,self.startTimelabeledit)
+                    #    self.sitetable1.setCellWidget(27,1,self.endDatelabeledit)
+                     #   self.sitetable1.setCellWidget(28,1,self.endTimelabeledit)
+                     #   self.sitetable1.setCellWidget(24,1,self.rateIrrilabeledit)            
         
         elif(self.operationname == "Simulation End"):                
             self.sitetable1.hideRow(0)
@@ -1521,7 +1572,7 @@ name, click SAVE. Once it is registered in left panel, you add new treatment(s)"
         else:  #if self.operationname == "Simulation Start" and self.cropname == "fallow":   
             self.sitetable1.hideRow(0)
            # print("SSSSSSS")
-       #     print(self.record[0][2])
+            print(self.record[0][2])
             record_parts_simf = self.record[0][2].split("/")
             currentYear_simf= record_parts_simf[2]
             self.calendar.setDate(QDate(int(currentYear_simf),int(record_parts_simf[0]),int(record_parts_simf[1])))

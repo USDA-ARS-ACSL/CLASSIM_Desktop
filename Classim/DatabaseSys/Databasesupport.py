@@ -40,7 +40,7 @@ def getClassimVersion():
     rlist =() # tuple   
     conn, c = openDB('crop.db')
     if c:
-        c.execute("select version from classimVersion where id= (select max(id) from classimVersion)")
+        c.execute("select version from classimVersion ORDER BY id DESC LIMIT 1")  #where id= (select max(id) from classimVersion)")
         c_row = c.fetchone()
      #   print(c_row[0])
         if c_row != None:        
@@ -1142,7 +1142,7 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
   Ouput:
     '''
     conn, c = openDB('crop.db')
-    print("irr_param: ", irr_param)
+   # print("irr_param: ", irr_param)
    # print("operation_record: ",operation_record)
     if c:
         op_id = int(op_id)
@@ -1237,8 +1237,8 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
                     #if c.fetchone() is not None: 
                      #   print("Duplicate entry found for opID:", op_id) 
                         
-                    c.execute("insert into initCondOp (opID, pop, autoirrigation, xseed, yseed, cec, eomult, rowSpacing, cultivar, \
-                                seedpieceMass) values (?,?,?,?,?,?,?,?,?,?)", initCond_record)
+                    c.execute("insert into initCondOp (opID, pop, autoirrigation, xseed, yseed, cec, eomult, rowSpacing, cultivar,\
+                               seedpieceMass) values (?,?,?,?,?,?,?,?,?,?)", initCond_record)
                 elif operation_record[0] == "Tillage":
                     tillage_record = (op_id,) + tuple(tillage_record)
                     c.execute("insert into tillageOp (opID, tillage) values (?,?)", tillage_record)
@@ -1273,6 +1273,7 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
                         opID_operation = last_id 
                         c.execute("insert into irrigationDetails (opID, o_t_exid, irrigationClass) VALUES (?, ?, ?)", (opID_operation, o_t_exid, irrigation_class_value))
                         irr_record = (opID_operation ,) + (irr_param[-1],) + tuple(irr_param[:-1]) 
+                        #print(irr_record)
                         
                         hour1 = int(irr_record[4].split(':')[0])
                         hour2 = int(irr_record[6].split(':')[0])
@@ -1280,6 +1281,8 @@ def check_and_update_operationDB(op_id,treatmentname, experimentname, cropname, 
                         
                         c.execute("insert into Irrig_floodH (opID, irrigationClass, pondDepth, irrStartD, startH, irrStopD, stopH) values (?,?,?,?,?,?,?)", irr_record)
                     else:
+                       # print("1111")
+                     #   print(irr_param)
                         irr_param = [irr_param[0], irr_param[5], irr_param[1], irr_param[2], irr_param[3], irr_param[4], irr_param[6]]
                       #  print(irr_param)
                         record_tuple4 = record_tuple[:-1] +  (irr_param[2],)         
@@ -1334,9 +1337,9 @@ def validate_date(o_t_exid,op_name,date):
         if c_row != None:
             for record in c_row:
                 if(record[1] != ""):
-                    op_date = dt.strptime(record[1],"%m/%d/%Y")
+                    op_date = dt.strptime(record[1],'%m/%d/%Y')
                     op_date_string = op_date.strftime("%b %d, %Y")
-                   
+                  
                     if(record[0] == "Simulation Start"):
                         if(date <= op_date):
                             err_string = "Date should be greater then Simulation Start date (%s)." % str(op_date_string)
@@ -1514,10 +1517,10 @@ def read_treatmentDB(crop,experiment):
         record_tuple = (experiment, crop)
         c1 = c.execute("SELECT name FROM treatment where t_exid = (select exid from experiment where name = ? and crop = ?)",record_tuple)    
         c1_row = c1.fetchall()
-       # if c1_row != None:
-       #     for c1_row_record in c1_row:
-        #        rlist.append(c1_row_record[0])
-        rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
+        if c1_row != None:
+            for c1_row_record in c1_row:
+                rlist.append(c1_row_record[0])
+        
         conn.close()  
         return rlist
 
@@ -1569,7 +1572,7 @@ def read_fertilizationClass():
         c1_row = c1.fetchall()
     #    if c1_row != None:
      #       for c1_row_record in c1_row:
-    #            rlist.append(c1_row_record[0])
+      #          rlist.append(c1_row_record[0])
         rlist = [c1_row_record[0] for c1_row_record in c1_row if c1_row != None]
         conn.close()
         return rlist
@@ -1677,8 +1680,8 @@ def read_soilhydroDB(soilname):
     conn, c = openDB('crop.db')
     if c:
         if len(soilname) > 0:
-            c1= c.execute("Select thr, ths, tha, th, Alfa, n, Ks, Kk, thk, BD, OM_pct, Sand, Silt FROM soil_long where o_sid = \
-                           (SELECT id FROM soil where soilname = ? )",[soilname])
+            c1= c.execute("Select thr, ths, tha, th, Alfa, n, Ks, Kk, thk, BD, OM_pct, Sand, Silt FROM soil_long \
+                           where o_sid = (SELECT id FROM soil where soilname = ? )",[soilname])
             c1row = c1.fetchall()
           #  if c1row != None:
           #      for c1rowrecord in c1row:
@@ -2093,7 +2096,7 @@ def read_experiment(item):
     if c:
         search_str = item     
         if len(search_str) > 0:
-            c1 = c.execute("SELECT exid, name FROM experiment where crop= '%s' order by name;"%(search_str))          
+            c1 = c.execute("SELECT exid, name FROM experiment where crop= '%s' order by name;" % (search_str))          
             c1_row = c1.fetchall()
        #     if c1_row != None:
        #         for c1_row_record in c1_row:
@@ -2157,19 +2160,17 @@ def getIrrigationData(simulationname, o_t_exid):
     Output:
       Tuple with amounts of irrigation
     '''
-  #  print("Sim:", simulationname)
     
     rlist=[]
     conn, c = openDB('crop.db')
     if c:
         c1 = c.execute("select o.odate, AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
-       # print("c1row",c1row)
         if c1row != None:
             rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
         return rlist
-
+    
 
 def getFloodHData(simulationname, o_t_exid):
     '''
@@ -2185,7 +2186,6 @@ def getFloodHData(simulationname, o_t_exid):
     if c:
         c1 = c.execute("select pondDepth, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodH Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
-       # print("c1row",c1row)
         if c1row != None:
             rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
@@ -2205,12 +2205,11 @@ def getFloodRData(simulationname, o_t_exid):
     if c:
         c1 = c.execute("select pondDepth, rate, irrStartD, startH, irrStopD, stopH from operations o, Irrig_floodR Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
-       # print("c1row",c1row)
         if c1row != None:
             rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
-      #  print("rlist:",rlist)
         return rlist
+    
 
 def extract_irrigAmtData(simulationname, o_t_exid):
     '''
@@ -2225,14 +2224,9 @@ def extract_irrigAmtData(simulationname, o_t_exid):
     rlist=[]
     conn, c = openDB('crop.db')
     if c:
-       # c1 = c.execute("select o.opID, o.o_t_exid, AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID =Ip.opID and o.o_t_exid=?", simulationname)
-        c1 = c.execute("select  AmtIrrAppl from operations o, Irrig_pivotOp Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
+       # c1 = c.execute("SELECT date FROM weather_data where stationtype = ?",(stationtype,)) #order by lower(weather_id)",(stationtype,))
+        c1= c.execute("SELECT AmtIrrAppl FROM operations o, Irrig_pivotOp Ip where o.opID == Ip.opID and o.o_t_exid==? order by o.odate asc", (o_t_exid, ))
         c1row = c1.fetchall()
-       # print("c1row",c1row)
-  #      if c1row != None:
-          
-  #          for c1_row_record in c1row:
-    #            rlist.append(c1_row_record)
         rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
         return rlist
@@ -2246,8 +2240,9 @@ def read_irrigationDB(o_t_exid):
         c1row = c1.fetchall()
         rlist = [c1_row_record for c1_row_record in c1row if c1row != None]
         conn.close()
-        print("read_irrigationDB: ", rlist)
+       # print("reda_irrigationDB: ", rlist)
         return rlist
+    
 
 def read_weather_id_forstationtype(stationtype):  
     '''
@@ -2296,15 +2291,6 @@ def read_weatherDate_forstationtype(stationtype, weather_id):
   Output:
     Tuple with weather date list
     '''
-
-    conn, c = openDB('crop.db')
-    if c:
-       # c1 = c.execute("SELECT date FROM weather_data where stationtype = ?",(stationtype,)) #order by lower(weather_id)",(stationtype,))
-        c1= c.execute("SELECT max(date), min(date) FROM weather_data where stationtype =? and weather_id = ? group by stationtype, weather_id", (stationtype,weather_id))
-        c1_row = c1.fetchall()
-         
-        conn.close()            
-        return c1_row[0][0], c1_row[0][1]
 
     conn, c = openDB('crop.db')
     if c:
@@ -2692,6 +2678,8 @@ def extract_date_time(date,time):
   Output:
     date as a timestamp
     '''
+  #  print("Date:", date)
+  #  print("Time: ", time)
     (m,d,y) = str(date).split('/')
     newDate = pd.Timestamp(int(y),int(m),int(d),time)
     return newDate
@@ -2708,7 +2696,7 @@ def checkNaNInOutputFile(table_name,g_name):
     columnList = []
     spaceStr = ", "
     message = ""
- #   print(g_name, table_name)
+
     g_df = pd.read_csv(g_name,skipinitialspace=True,index_col=False)
     # Check for NaN values for each dataframe column
     dates = []
@@ -2722,7 +2710,8 @@ def checkNaNInOutputFile(table_name,g_name):
                    table_name == "g01_soybean" or table_name == "nitrogen_soybean" or \
                    table_name == "plantStress_soybean"):
                     # Change date format
-                    g_df['Date_Time'] = g_df.apply(lambda row: extract_date_time(row['date'],row['time']), axis=1)
+                   print("g_df:", g_df) 
+                   g_df['Date_Time'] = g_df.apply(lambda row: extract_date_time(row['date'],row['time']), axis=1)
 
                 if(table_name == "g03_maize" or table_name == "g04_maize" or table_name == "g05_maize" or \
                    table_name == "g03_potato" or table_name == "g04_potato" or table_name == "g05_potato" or \
@@ -2730,8 +2719,8 @@ def checkNaNInOutputFile(table_name,g_name):
                    table_name == "g03_fallow" or table_name == "g05_fallow"):
                     # Change date format
                     # 2dsoil start counting the days starting on 12/30/1899.
-                    g_df['DateInit'] = pd.Timestamp('1899-12-30')
-                    g_df['Date_Time'] = g_df['DateInit'] + pd.to_timedelta(g_df['Date_time'], unit='D')
+                   g_df['DateInit'] = pd.Timestamp('1899-12-30')
+                   g_df['Date_Time'] = g_df['DateInit'] + pd.to_timedelta(g_df['Date_time'], unit='D')
 
                 g_df['Date_Time'] = g_df['Date_Time'].dt.strftime('%m/%d/%Y')
                 date = "Date:"+spaceStr.join(g_df['Date_Time'].loc[dates])+"<br>\n"
@@ -2766,8 +2755,21 @@ def ingestOutputFile(table_name,g_name,simulationname):
            table_name == "nitrogen_soybean" or table_name == "plantStress_soybean" or table_name == "g01_cotton" or \
            table_name == "plantStress_cotton"):
             # Change date format
-            g_df['Date_Time'] = g_df.apply(lambda row: extract_date_time(row['date'],row['time']), axis=1)
+            def _safe_extract_date_time(row):
+                try:
+                    return extract_date_time(row['date'], row['time'])
+                except Exception as e:
+                    # Log the bad row and return NaT so apply stays 1-D
+                    print("extract_date_time error for row:", row, "err:", e)
+                    return pd.NaT
+
+          # print(g_df)
+          # g_df['Date_Time'] = g_df.apply(lambda row: extract_date_time(row['date'],row['time']), axis=1)
+             # Ensure result is a 1-D Series of scalars (Timestamp or NaT)
+            g_df['Date_Time'] = g_df.apply(_safe_extract_date_time, axis=1)
+
             g_df = g_df.drop(columns=['date','time'])
+
             if(table_name == "g01_potato"):
                 g_df.rename(columns={'LA/pl':'LA_pl'},inplace=True)
             if(table_name == "nitrogen_potato"):
@@ -3006,6 +3008,7 @@ def getMaizeAgronomicData(sim_id, date):
             rlist = c1row
 
         conn.close()
+     #   print("getMaizeAgronomicData: ",rlist)
         return rlist
 
 
@@ -3018,7 +3021,7 @@ def getCottonAgronomicData(sim_id):
     date
     yield
     PlantDM (total biomass)
-    N_uptake
+    NUpt
     '''
     rlist = None # list   
 
@@ -3026,7 +3029,7 @@ def getCottonAgronomicData(sim_id):
     if c:
         querytuple = (sim_id,)
 
-        c1 = c.execute("select max(Date_time), Yield, PlantDM, N_uptake from g01_cotton where g01_cotton_id=?",querytuple)
+        c1 = c.execute("select max(Date_time), Yield, PlantDM, NUpt from g01_cotton where g01_cotton_id=?",querytuple)
         c1row = c1.fetchone()
         if c1row != None:
             rlist = c1row
@@ -3169,7 +3172,7 @@ def getNitrogenUptake(sim_id, date, crop):
     date = maturity date
     crop
   Output:
-    N_uptake = nitrogen uptake
+    NUpt = nitrogen uptake
     '''
     rlist = None  
 
@@ -3385,10 +3388,8 @@ def check_cultivarDB(crop, cultivarname):
     '''  
     rlist = []   
     conn, c = openDB('crop.db')
-  #  print("cultivar: ",type(cultivarname))
     if c:
         if crop == 'maize':
-            #cultivartuple = (cultivarname, cultivar_id)
             c1= c.execute("SELECT id FROM cultivar_maize where hybridname=?", (cultivarname,))
         elif crop == 'soybean':
             c1= c.execute("SELECT id FROM cultivar_soybean where hybridname=?", (cultivarname,))
@@ -3405,20 +3406,9 @@ def check_cultivarDB(crop, cultivarname):
 
             
 def update_cultivarDB(crop, record_tuple):
-  #  print(record_tuple)
-    # print(crop, record_tuple[0])
- 
-
     (crop,cultivarname) =record_tuple[0].split(":")
-  #  rlist = []
-  #  rlist = check_cultivarDB(crop, cultivarname)
-  #  print(cultivarname)
-
-  #  if rlist == []:
     updated_tuple = record_tuple[1:] + (cultivarname,)
- #   print("Updated_tuple:", updated_tuple)
     conn, c = openDB('crop.db')
-
     if c:
         if crop == 'maize':
             c.execute('update cultivar_maize set juvenileleaves=?, Rmax_LTAR=?, Rmax_LTIR=?, PhyllFrmTassel=?, StayGreen=? where hybridname = ?', updated_tuple)
@@ -3448,3 +3438,439 @@ def expSysOutput(id, irr, yld):
 def daterange(start_date, end_date):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
+
+
+def read_nitrogenDB(simulationname, cropname):
+    '''
+    Returns the nitrogen data
+    input:
+        simulationname
+    Output:
+        nitrogen data as uptake and leached
+    '''   
+    conn, c = openDB('cropOutput.db')
+    croptable1 = "g01_" + cropname
+    croptable2 = "g05_" + cropname
+    
+    id1 = croptable1 + "_id"
+    id2 = croptable2 + "_id"
+    
+    if c:
+        query1 = f"SELECT Date_Time, NUpt FROM {croptable1} WHERE {id1} = ?"
+        query2 = f"SELECT Date_Time, N_Leach FROM {croptable2} WHERE {id2} = ?"
+        param=(simulationname,)
+        df1 = pd.read_sql_query(query1,conn, params = param)
+        df2 = pd.read_sql_query(query2, conn, params= param)
+        conn.close()
+        return df1, df2
+    
+
+
+
+def findNAppldB(cropname, experimentname, treatmentname, inseasondate):
+    """
+    Backwards-compatible wrapper: return total management (fertilizer) N up to inseasondate.
+    Uses get_management_n_map(...) so logic is centralized.
+    """
+    # resolve ids
+    t_exid = read_experimentDB_id(cropname, experimentname)
+    tid = read_treatmentDB_id(t_exid, treatmentname)
+    if tid is None:
+        return 0.0
+    # sum management N up to in-season date
+    mgmt_map = get_management_n_map(tid, up_to_date=inseasondate) if inseasondate else get_management_n_map(tid)
+    return sum(mgmt_map.values())
+
+def get_management_n_map(tid, up_to_date=None):
+    """
+    Return dict mapping date (YYYY-MM-DD) -> total management-applied N for a given treatment id (tid).
+    If up_to_date provided (YYYY-MM-DD) only returns fertilizer operations with date <= up_to_date.
+    """
+    conn, c = openDB('crop.db')
+    try:
+        q = """
+            SELECT o.odate, fn.nutrient, fn.nutrientQuantity
+            FROM operations o
+            JOIN fertNutOp fn ON o.opID = fn.opID
+            WHERE o.o_t_exid = ? AND o.name = 'Fertilizer'
+        """
+        c.execute(q, (tid,))
+        rows = c.fetchall()
+        mgmt_map = {}
+        for odate, nutrient, qty in rows:
+            if odate is None or qty is None:
+                continue
+            # parse date in operations (stored like 'MM/DD/YYYY')
+            try:
+                date_iso = datetime.strptime(odate.strip(), "%m/%d/%Y").strftime("%Y-%m-%d")
+            except Exception:
+                # skip malformed dates
+                continue
+
+            # filter by up_to_date if provided
+            if up_to_date and date_iso > up_to_date:
+                continue
+
+            # Relax nutrient filter: accept anything that looks like N, or if you know you only ever
+            # have one nutrient per fertilizer op, just count all rows.
+            try:
+                nu = (nutrient or "").strip().lower()
+            except Exception:
+                nu = ""
+
+            is_n = False
+            if isinstance(nutrient, str):
+                if "n" == nu or "n " in nu or "nitro" in nu:
+                    is_n = True
+                elif " n)" in nu or "(n" in nu:
+                    is_n = True
+                # if your DB stores things like "Urea" but you still want to count it as N, you could:
+                # elif nu in ("urea", "nh4no3", "nh4-n", "no3-n"):
+                #     is_n = True
+
+            # If you know there is only N in fertNutOp, you can skip the check entirely:
+            # is_n = True
+
+            if not is_n:
+                continue
+
+            try:
+                val = float(qty)
+            except Exception:
+                continue
+            mgmt_map[date_iso] = mgmt_map.get(date_iso, 0.0) + val
+        return mgmt_map
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+           
+ 
+# Min-Max Scaling function
+def min_max_scale(arr):
+    scaler = (arr - arr.min()) / (arr.max() - arr.min())
+    return scaler
+
+# Create the table when the Simulation starts at the Seasonal tab
+def create_simulation_table():
+    conn,c = openDB('cropOutput.db')
+    if c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS N_simulation_ES (
+                Simulation_id INTEGER,
+                Date TEXT,
+                Min_N REAL,
+                NUpt REAL,
+                N_Dem REAL,
+                N_Leach REAL
+            )
+        ''')
+        conn.commit()
+        conn.close()
+
+# Erase the table when the Application close
+def erase_simulation_data():
+    conn,c = openDB('cropOutput.db')
+    if c:
+        c.execute('DELETE FROM N_simulation_ES')
+        conn.commit()
+        conn.close()
+
+# Save N_simulation_data to the N_simulation_ES table. 
+
+def save_simulation_data(simulation_id, date, min_n, nupt, n_dem, n_leach):
+    conn,c = openDB('cropOutput.db')
+    if c:
+        try:
+            # Ensure a single row per (Simulation_id, Date) to avoid duplicates from repeated parsing.
+            c.execute("DELETE FROM N_simulation_ES WHERE Simulation_id = ? AND Date = ?", (simulation_id, date))
+            c.execute('''
+                INSERT INTO N_simulation_ES (Simulation_id, Date, Min_N, NUpt, N_Dem, N_Leach)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (simulation_id, date, min_n, nupt, n_dem, n_leach))
+            conn.commit()
+        except Exception as e:
+            print("DEBUG save_simulation_data error:", e)
+            try:
+                conn.rollback()
+            except:
+                pass
+        finally:
+            try:
+                conn.close()
+            except:
+                pass
+
+# Read the N- data from the MassBI.ou, .g01, and .g05 tables.
+def read_simulation_outputs(fieldpath, sitename):
+    # MassBI.out: Date, Min_N
+    massbi_file = os.path.join(fieldpath, 'MassBI.out')
+    df_massbi = pd.read_csv(massbi_file, dtype=str)
+    df_massbi.columns = df_massbi.columns.str.strip()
+    df_massbi = df_massbi[['Date', 'Min_N']][1:]
+    df_massbi['Date'] = pd.to_datetime(df_massbi['Date'].str.strip(), format='%m/%d/%Y')
+    df_massbi['Min_N'] = pd.to_numeric(df_massbi['Min_N'].str.strip(), errors='coerce')
+
+    # .g01: NUpt, N_Dem
+    g01_file = os.path.join(fieldpath, f"{sitename}.g01")
+    df_g01 = pd.read_csv(g01_file, dtype=str)
+    df_g01.columns = df_g01.columns.str.strip()
+    df_g01['date'] = pd.to_datetime(df_g01['date'].str.strip(), format='%m/%d/%Y')
+    df_g01['NUpt'] = pd.to_numeric(df_g01['NUpt'].str.strip(), errors='coerce')
+    df_g01['N_Dem'] = pd.to_numeric(df_g01['N_Dem'].str.strip(), errors='coerce')
+
+    # .g05: N_Leach
+    g05_file = os.path.join(fieldpath, f"{sitename}.g05")
+    df_g05 = pd.read_csv(g05_file, dtype=str)
+    df_g05.columns = df_g05.columns.str.strip()
+    df_g05['Date'] = pd.to_datetime(df_g05['Date'].str.strip(), format='%m/%d/%Y')
+    df_g05['N_Leach'] = pd.to_numeric(df_g05['N_Leach'].str.strip(), errors='coerce')
+
+    # Merge all on Date
+    df = pd.merge(df_massbi, df_g01, left_on='Date', right_on='date', how='outer')
+    df = pd.merge(df, df_g05, left_on='Date', right_on='Date', how='outer')
+
+    # Fill missing values with None
+    df = df[['Date', 'Min_N', 'NUpt', 'N_Dem', 'N_Leach']].fillna(None)
+    return df
+
+
+# DB helpers to insert/update and sum applied N - 1
+'''
+def insert_or_update_nitrogen_applied(tid, t_exid, date_iso, n_app):
+    """
+    Insert or update a record in nitrogen_applied (crop.db).
+    - tid: treatment id (int)
+    - t_exid: experiment id (int)
+    - date_iso: 'YYYY-MM-DD' string
+    - n_app: numeric amount
+    """
+    conn, c = openDB('crop.db')
+    if c:
+        try:
+            # Requires UNIQUE(tid, date) in table schema; uses SQLite UPSERT syntax
+            c.execute("""
+                INSERT INTO nitrogen_applied (tid, t_exid, date, n_app)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(tid, date) DO UPDATE SET n_app = excluded.n_app, t_exid = excluded.t_exid
+            """, (tid, t_exid, date_iso, float(n_app)))
+            conn.commit()
+            return True
+        except Exception as e:
+            # Optional: log or notify
+            print("insert_or_update_nitrogen_applied error:", e)
+            return False
+        finally:
+            conn.close()
+    return False
+'''
+def insert_or_update_nitrogen_applied(tid, t_exid, date_iso, n_app):
+    """
+    Insert or update a record in nitrogen_applied (crop.db).
+    Robust implementation that does not rely on a UNIQUE constraint or SQLite UPSERT syntax.
+    """
+    conn, c = openDB('crop.db')
+    if not c:
+        return False
+    try:
+        # Check if row exists for (tid, date)
+        c.execute("SELECT 1 FROM nitrogen_applied WHERE tid = ? AND date = ? LIMIT 1", (tid, date_iso))
+        exists = c.fetchone() is not None
+
+        if exists:
+            c.execute("UPDATE nitrogen_applied SET n_app = ?, t_exid = ? WHERE tid = ? AND date = ?",
+                      (float(n_app), t_exid, tid, date_iso))
+        else:
+            c.execute("INSERT INTO nitrogen_applied (tid, t_exid, date, n_app) VALUES (?, ?, ?, ?)",
+                      (tid, t_exid, date_iso, float(n_app)))
+
+        conn.commit()
+        return True
+    except Exception as e:
+        print("insert_or_update_nitrogen_applied error:", e)
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+# DB helpers to insert/update and sum applied N - 2
+def sum_n_applied_until_date(tid, date_iso):
+    """
+    Return sum(n_app) for a given tid up to and including date_iso (YYYY-MM-DD).
+    """
+    conn, c = openDB('crop.db')
+    total = 0.0
+    if c:
+        try:
+            c.execute("SELECT SUM(n_app) FROM nitrogen_applied WHERE tid = ? AND date <= ?", (tid, date_iso))
+            row = c.fetchone()
+            if row and row[0] is not None:
+                total = float(row[0])
+        finally:
+            conn.close()
+    return total
+
+# Read max allowed N 
+def maxAllowedNdB(cropname, experimentname, treatmentname, allowedN, simulation_id=None):
+    """
+    Saves the maximum allowed nitrogen to allowedNitrogen table.
+    If the allowedNitrogen table has a simulation_id column and simulation_id is provided,
+    insert a simulation-scoped row. Otherwise fall back to existing (tid, t_exid, allowedN).
+    """
+    conn, c = openDB('crop.db')
+    if not c:
+        return False
+    try:
+        t_exid = read_experimentDB_id(cropname, experimentname)
+        tid = read_treatmentDB_id(t_exid, treatmentname)
+
+        # Inspect allowedNitrogen schema to check for simulation_id column
+        c.execute("PRAGMA table_info(allowedNitrogen)")
+        cols = [r[1] for r in c.fetchall()]
+
+        if 'simulation_id' in cols and simulation_id is not None:
+            record_tuple = (tid, t_exid, simulation_id, allowedN)
+            c.execute("INSERT INTO allowedNitrogen (tid, t_exid, simulation_id, allowedN) VALUES (?, ?, ?, ?)", record_tuple)
+        else:
+            record_tuple = (tid, t_exid, allowedN)
+            c.execute("INSERT INTO allowedNitrogen (tid, t_exid, allowedN) VALUES (?, ?, ?)", record_tuple)
+
+        conn.commit()
+        return True
+    except Exception as e:
+        print("maxAllowedNdB error:", e)
+        conn.rollback()
+        return False
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+def get_max_allowed_n(tid, t_exid, simulation_id=None):
+    """
+    Return the latest allowedN value.
+    Behavior:
+      - If simulation_id provided and allowedNitrogen contains simulation_id column,
+        return latest row filtered by simulation_id.
+      - Otherwise return latest row filtered by tid and t_exid (backwards compatible).
+    Returns float or None.
+    """
+    conn, c = openDB('crop.db')
+    try:
+        c.execute("PRAGMA table_info(allowedNitrogen)")
+        cols = [r[1] for r in c.fetchall()]
+
+        if simulation_id is not None and 'simulation_id' in cols:
+            c.execute("SELECT allowedN FROM allowedNitrogen WHERE simulation_id = ? ORDER BY rowid DESC LIMIT 1", (simulation_id,))
+            row = c.fetchone()
+            if row and row[0] is not None:
+                return float(row[0])
+
+        # fallback to tid + t_exid lookup
+        c.execute("SELECT allowedN FROM allowedNitrogen WHERE tid = ? AND t_exid = ? ORDER BY rowid DESC LIMIT 1", (tid, t_exid))
+        row = c.fetchone()
+        return float(row[0]) if row and row[0] is not None else None
+    except Exception as e:
+        print("get_max_allowed_n error:", e)
+        return None
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+def get_nitrogen_applied_map(tid, up_to_date=None, t_exid=None):
+    """
+    Return dict mapping date (YYYY-MM-DD) -> n_app for entries in nitrogen_applied for given tid.
+    If up_to_date provided (YYYY-MM-DD), only returns rows with date <= up_to_date.
+    If t_exid provided, restrict results to that experiment id (prevents picking values from other experiments/runs).
+    Backwards-compatible: callers that pass only (tid) or (tid, up_to_date=...) still work.
+    """
+    conn, c = openDB('crop.db')
+    try:
+        params = [tid]
+        q = "SELECT date, n_app FROM nitrogen_applied WHERE tid = ?"
+        if t_exid is not None:
+            q += " AND t_exid = ?"
+            params.append(t_exid)
+        if up_to_date:
+            q += " AND date <= ?"
+            params.append(up_to_date)
+        q += " ORDER BY date ASC"
+        c.execute(q, tuple(params))
+        rows = c.fetchall()
+        return {r[0]: float(r[1]) for r in rows} if rows else {}
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+# Read existing expert entries
+def get_nitrogen_applied_by_tid(tid, up_to_date=None):
+    """
+    Return dict mapping date (YYYY-MM-DD) -> n_app for entries in nitrogen_applied for given tid.
+    If up_to_date provided (YYYY-MM-DD), only returns rows with date <= up_to_date.
+    """
+    conn, c = openDB('crop.db')
+    try:
+        if up_to_date:
+            q = "SELECT date, n_app FROM nitrogen_applied WHERE tid = ? AND date <= ?"
+            c.execute(q, (tid, up_to_date))
+        else:
+            q = "SELECT date, n_app FROM nitrogen_applied WHERE tid = ?"
+            c.execute(q, (tid,))
+        rows = c.fetchall()
+        return {r[0]: float(r[1]) for r in rows} if rows else {}
+    finally:
+        try:
+            conn.close()
+        except:
+            pass 
+
+
+
+def delete_n_applied(tid, t_exid, date_iso, askUserFlag=True):
+    """
+    Delete a single nitrogen_applied row by (tid, date).
+    - tid: treatment id (int)
+    - t_exid: experiment id (int)
+    - date_iso: 'YYYY-MM-DD' string
+    - askUserFlag: if True, prompt user for confirmation via messageUserDelete()
+    Returns True on success, False otherwise.
+    """
+    if askUserFlag:
+        if not messageUserDelete(f"Delete Applied N entry for {date_iso}?"):
+            return False
+
+    conn, c = openDB('crop.db')
+    if not c:
+        return False
+    try:
+        # Use t_exid as additional safety if provided
+        if t_exid is not None:
+            c.execute("DELETE FROM nitrogen_applied WHERE tid = ? AND t_exid = ? AND date = ?", (tid, t_exid, date_iso))
+        else:
+            c.execute("DELETE FROM nitrogen_applied WHERE tid = ? AND date = ?", (tid, date_iso))
+        conn.commit()
+        return True
+    except Exception as e:
+        print("delete_nitrogen_applied error:", e)
+        conn.rollback()
+        return False
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+

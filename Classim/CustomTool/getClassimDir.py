@@ -2,6 +2,7 @@ import os
 import winreg as wrg
 
 def getClassimDir():
+    from CustomTool.UI import messageUserInfo
     # Check where classim is installed
     # Store location of HKEY_CURRENT_USER
     location = wrg.HKEY_CURRENT_USER

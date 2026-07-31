@@ -7,6 +7,7 @@ import re
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, \
                             QHeaderView, QRadioButton, QButtonGroup, QMenu, QCheckBox, QGridLayout, QGroupBox, QHeaderView
 from PyQt5.QtCore import QFile, QTextStream, pyqtSignal, QCoreApplication
+from CustomTool.getClassimDir import *
 from CustomTool.custom1 import *
 from CustomTool.UI import *
 from CustomTool.generateModelInputFiles import *
@@ -16,9 +17,9 @@ from Models.cropdata import *
 from TabbedDialog.tableWithSignalSlot import *
 from subprocess import Popen
 
-global classimDir
-global runDir
-global storeDir
+#global classimDir
+#global runDir
+#global storeDir
 
 classimDir = getClassimDir()
 runDir = os.path.join(classimDir,'run')
@@ -687,6 +688,8 @@ make sure to press the Execute Rotation button.")
         ltempVar = self.tablebasket.cellWidget(irow,6).currentText()
         lrainVar = self.tablebasket.cellWidget(irow,7).currentText()
         lCO2Var = self.tablebasket.cellWidget(irow,8).currentText()
+        if lCO2Var == "None":
+            lCO2Var = 0
 
         src_file = storeDir+'\\Water.DAT'
         dest_file = field_path+'\\WatMovParam.DAT'
@@ -723,14 +726,19 @@ make sure to press the Execute Rotation button.")
             copyFile(src_file,dest_file)
         WriteDripIrrigationFile(field_name,field_path)
         linSeaDate = None
+        hourlyFlag = 1 if self.step_hourly.isChecked() else 0
         hourly_flag, edate = WriteWeather(lexperiment,ltreatmentname,lstationtype,lweather,field_path,ltempVar,lrainVar,lCO2Var,linSeaDate)
+
+        
+        WriteTimeFileData(ltreatmentname,lexperiment,lcrop,lstationtype,hourlyFlag,field_name,field_path,hourly_flag,1)
+
         WriteSoluteFile(lsoilname,field_path)
         WriteGasFile(field_path)
-        hourlyFlag = 1 if self.step_hourly.isChecked() else 0
-        WriteTimeFileData(ltreatmentname,lexperiment,lcrop,lstationtype,hourlyFlag,field_name,field_path,hourly_flag,1)
+        
+        
         WriteNitData(lsoilname,field_name,field_path,rowSpacing)
         self.WriteLayerGas(irow,lsoilname,field_name,field_path,rowSpacing,rootWeightPerSlab)
-        WriteSoiData(lsoilname,field_name,field_path)
+       # WriteSoiData(lsoilname,field_name,field_path)
         surfResType = WriteManagement(lcrop,lexperiment,ltreatmentname,field_name,field_path,rowSpacing)
         irrType = irrigationInfo(lcrop,lexperiment,ltreatmentname)
         WriteMulchGeo(field_path,surfResType)  
@@ -782,6 +790,15 @@ make sure to press the Execute Rotation button.")
                 print("twosoil stage completed. %s",str(out))
             else:
                 print("twosoil stage failed. Error =. %s",str(err))
+
+            # Debugging output directory and g01 file existence
+            print("Output directory listing for debug:", field_path)
+            for f in os.listdir(field_path):
+                print("  FILE:", f)
+
+            g01_path = os.path.join(field_path, field_name + ".g01")
+            print("DEBUG: expecting g01 at:", g01_path, "exists:", os.path.exists(g01_path))
+
         except OSError as e:
             sys.exit("failed to execute twodsoil program, %s", str(e))
 
@@ -1121,7 +1138,68 @@ make sure to press the Execute Rotation button.")
                     dfG03 = dfG03.groupby(['Layer'],as_index=False).agg({'thNew':['mean'],'NO3N_theta_w':['sum'],'NH4N_w':['sum'],
                                                                          'soilMass':['sum'],'Temp':['mean'],'mult':['mean']})
                     dfG03.columns = ["_".join(x) for x in dfG03.columns.ravel()]
- 
+                    
+                   
+                    initType = "'w'"
+
+                    # Calculate OM and Matric potential (all as scalars, not Series)
+                    Humus_C_layer = (dfG07['Humus_C_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Humus_N_layer = (dfG07['Humus_N_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Litter_C_layer = (dfG07['Litter_C_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Litter_N_layer = (dfG07['Litter_N_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Manure_C_layer = (dfG07['Manure_C_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Manure_N_layer = (dfG07['Manure_N_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Root_C_layer = (dfG07['Root_C_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    Root_N_layer = (dfG07['Root_N_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+
+                    OM_layer = (Humus_C_layer + Root_C_layer) / percentC + Humus_N_layer + Root_N_layer
+                    # 1% OM is .01 g OM/g soil = 10 mg OM/g = 10,000 ug/g
+                    # In 2dsoil OM is input as a fraction or %/100
+                    OM_frac = OM_layer / 10000.0 / 100.0
+
+                    # Convert "ug/cm3(soil)" to "ug/g (soil)" (ppm) by dividing by bulk density
+                    NO3_layer = (dfG03['NO3N_theta_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+                    NH4_layer = (dfG03['NH4N_w_sum'] / dfG03['soilMass_sum']).iloc[0]
+
+                    thNew_mean = float(dfG03['thNew_mean'].iloc[0])
+                    temp_mean = float(dfG03['Temp_mean'].iloc[0])
+                    mult_mean = float(dfG03['mult_mean'].iloc[0])  # note: included for completeness if you use it later
+
+                    fout<< '%-14d%-6s%-14.5f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
+                           %-14.3f%-14.3f%-14.3f%-14.3f%-14.3f' % (
+                        int(record_tuple[0]),
+                        initType,
+                        OM_frac,
+                        Humus_C_layer,
+                        Humus_N_layer,
+                        Litter_C_layer,
+                        Litter_N_layer,
+                        Manure_C_layer,
+                        Manure_N_layer,
+                        NO3_layer,
+                        NH4_layer,
+                        thNew_mean,
+                        temp_mean,
+                        record_tuple[22],
+                        record_tuple[23],
+                        record_tuple[24],
+                        record_tuple[7] / 100.0,
+                        record_tuple[8] / 100.0,
+                        record_tuple[9] / 100.0,
+                        record_tuple[10],
+                        record_tuple[11],
+                        record_tuple[12],
+                        record_tuple[13],
+                        record_tuple[14],
+                        record_tuple[15],
+                        record_tuple[16],
+                        record_tuple[17],
+                        record_tuple[18],
+                        record_tuple[19],
+                        record_tuple[20],
+                        record_tuple[21]
+                    ) << "\n"
+                    '''
                     initType = "'w'"
                     # Calculate OM and Matric potential
                     Humus_C_layer = dfG07['Humus_C_w_sum']/dfG03['soilMass_sum']  #units are ug/g or ppm
@@ -1148,6 +1226,7 @@ make sure to press the Execute Rotation button.")
                            NO3_layer,NH4_layer,dfG03['thNew_mean'],dfG03['Temp_mean'],record_tuple[22],record_tuple[23],record_tuple[24],record_tuple[7]/100,record_tuple[8]/100,record_tuple[9]/100,record_tuple[10],record_tuple[11],
                            record_tuple[12],record_tuple[13],record_tuple[14],record_tuple[15],record_tuple[16],record_tuple[17],record_tuple[18],record_tuple[19],record_tuple[20],
                            record_tuple[21])<<"\n"
+                    '''
                 else:
                     fout<<'%-14d%-6s%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f%-14.3f\
                            %-14.3f%-14.3f%-14.3f%-14.3f%-14.3f' %(record_tuple[0],initType,record_tuple[2],-1,-1,0,0,0,0,record_tuple[3],record_tuple[4],record_tuple[5],record_tuple[6],

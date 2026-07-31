@@ -1,4 +1,10 @@
-#from asyncio.windows_events import NONE
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer
+from PyQt5.QtWidgets import (QWidget, QLabel, QComboBox, QVBoxLayout, QPushButton, 
+                             QSpacerItem, QSizePolicy, QCheckBox, QGridLayout, QHeaderView, 
+                             QTextEdit, QLineEdit, QTreeWidgetItem)
+from pyqtlet import L, MapWidget
+
 import os
 import sys
 from PyQt5.QtWidgets import QWidget, QLabel, QComboBox, QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QCheckBox, QGridLayout, QHeaderView
@@ -7,6 +13,16 @@ from pyqtlet import L, MapWidget
 from DatabaseSys.Databasesupport import *
 from TabbedDialog.tableWithSignalSlot import *
 from CustomTool.UI import *
+
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtQml import QQmlApplicationEngine
+
+from PyQt5 import QtWebEngineWidgets
+#from ipyleaflet import Map, Marker, LayersControl, basemaps
+from ipywidgets import HTML, IntSlider
+from ipywidgets.embed import embed_data
+from PyQt5.QtCore import QTimer
+
 
 class SiteWidget(QWidget):
     def __init__(self):
@@ -74,13 +90,20 @@ class SiteWidget(QWidget):
         self.MapWidget = MapWidget()
 
         # Setting the map with pyqtlet
-        self.map = L.map(self.MapWidget)
-        self.marker = None
-        self.map.setView([39.8283,-103.8233],5)
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(self.map)
-        self.map.clicked.connect(lambda x:self.updateMap(x))
+        def _init_map():
+            self.map = L.map(self.MapWidget, {'attributionControl': False})
+            self.marker = None
+            self.map.setView([39.8283,-103.8233],5)
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(self.map)
+            self.map.clicked.connect(lambda x:self.updateMap(x))
 
-        
+       # QTimer.singleShot(0, _init_map)   # delay until event loop starts
+       # Increase delay to 500ms to allow WebEngine to fully load the HTML/JS context
+        QTimer.singleShot(500, _init_map) 
+
+       # self.engine = QQmlApplicationEngine()
+      #  self.engine.load("map.qml")
+
 
 
         self.rlatlabel = QLabel("Latitude (deg)")
@@ -125,10 +148,21 @@ class SiteWidget(QWidget):
         self.setLayout(self.mainlayout) 
     
     
-    def showsitedetails(self,value):
+    def showsitedetails(self, value):
         '''
         Prepare view for SITE related information.
         '''
+       # if value < 0 or self.sitecombo.count() == 0:
+        #    return
+        if value < 0 or self.sitecombo.count() == 0:
+            return
+
+        self._reset_site_details_ui()
+
+        sitename = self.sitecombo.currentText().strip()
+        if sitename in ("", "Select from list"):
+            return True
+
         self.MapWidget.setVisible(False)
         self.rlatlabel.setVisible(False)
         self.rlatedit.setVisible(False)
@@ -138,11 +172,11 @@ class SiteWidget(QWidget):
         self.altedit.setVisible(False)
         self.sitenamelabel.setVisible(False)
         self.sitenameedit.setVisible(False)
-        self.savebutton.setVisible(False)       
-        self.deletebutton.setVisible(False)        
+        self.savebutton.setVisible(False)
+        self.deletebutton.setVisible(False)
 
-        sitename = str(self.sitecombo.currentText())
-        if sitename == "Select from list":
+        sitename = self.sitecombo.currentText().strip()
+        if sitename in ("", "Select from list"):
             return True
 
         self.MapWidget.setVisible(True)
@@ -154,48 +188,53 @@ class SiteWidget(QWidget):
         self.altedit.setVisible(True)
         self.sitenamelabel.setVisible(True)
         self.sitenameedit.setVisible(True)
-        self.savebutton.setVisible(True)       
+        self.savebutton.setVisible(True)
 
-        if sitename == 'Add New Site':            
+        if sitename == "Add New Site":
             self.rlatedit.setText("")
             self.rlonedit.setText("")
             self.altedit.setText("")
             self.sitenameedit.setText("")
-            self.savebutton.setText("SaveAs")       
-            self.map.setView([39.8283,-103.8233],5)
+            self.savebutton.setText("SaveAs")
+            self.map.setView([39.8283, -103.8233], 5)
             L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(self.map)
-            self.map.removeLayer(self.marker)
-            self.deletebutton.setVisible(False)              
+            if self.marker is not None:
+                self.map.removeLayer(self.marker)
+                self.marker = None
+            self.deletebutton.setVisible(False)
             self.rlatedit.setReadOnly(False)
             self.rlonedit.setReadOnly(False)
         else:
-            site_tuple = extract_sitedetails(self.sitecombo.itemText(value))     
+            site_tuple = extract_sitedetails(sitename)
+            if not isinstance(site_tuple, tuple) or len(site_tuple) < 4:
+                return False
+
             self.rlatedit.setText(str(site_tuple[1]))
             self.rlatedit.setReadOnly(True)
             self.rlonedit.setText(str(site_tuple[2]))
             self.rlonedit.setReadOnly(True)
             self.altedit.setText(str(site_tuple[3]))
-            self.sitenameedit.setText(self.sitecombo.itemText(value))             
-            # Setting the map with pyqtlet
-            self.map.setView([site_tuple[1],site_tuple[2]],5)
-            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(self.map)
-            if not self.marker:
-                self.marker = L.marker([site_tuple[1],site_tuple[2]])
-            else:
-                self.marker.setLatLng([site_tuple[1],site_tuple[2]])
-            self.marker.bindPopup('Latitude: '+"{:.{}f}".format(site_tuple[1],3)+' Longitude: '+"{:.{}f}".format(site_tuple[2],3))
-            self.map.addLayer(self.marker)
+            self.sitenameedit.setText(sitename)
             self.sitenamelabel.setVisible(False)
-            self.sitenameedit.setVisible(False)     
-
+            self.sitenameedit.setVisible(False)
             self.savebutton.setText("Update")
 
-        self.savebutton.clicked.connect(lambda:self.on_savebuttonclick(self.sitenameedit.text()))
-        # Only display delete button if the site is NOT being used in any simulation
-        if not isSiteOnPastruns(self.sitecombo.itemText(value)) and sitename != 'Add New Site':
+        try:
+            self.savebutton.clicked.disconnect()
+        except TypeError:
+            pass
+        self.savebutton.clicked.connect(lambda: self.on_savebuttonclick(self.sitenameedit.text()))
+
+        if sitename != "Add New Site" and not isSiteOnPastruns(sitename):
             self.deletebutton.setVisible(True)
-            self.deletebutton.clicked.connect(lambda:self.on_deletebuttonclick(sitename))
-        
+            try:
+                self.deletebutton.clicked.disconnect()
+            except TypeError:
+                pass
+            self.deletebutton.clicked.connect(lambda: self.on_deletebuttonclick(sitename))
+
+        return True
+
 
     @pyqtSlot()
     def on_savebuttonclick(self,item1):
@@ -204,12 +243,12 @@ class SiteWidget(QWidget):
         '''
         newSitename = str(self.sitenameedit.text())
         if self.savebutton.text() == "SaveAs":
-            if(newSitename == ""):
+            if newSitename == "":
                 return messageUser("Site Name is empty, please provide a name.")
-        
-            site_tuple = extract_sitedetails(newSitename)   
+
+            site_tuple = extract_sitedetails(newSitename)
             if site_tuple != 0:
-                return messageUser("Failed: Site exists. Change SITE name.") 
+                return messageUser("Failed: Site exists. Change SITE name.")
 
         altitude = self.altedit.text()
         if altitude == "":
@@ -218,29 +257,25 @@ class SiteWidget(QWidget):
         if float(altitude) < 0:
             return messageUser("Altitude should be greater or equal to 0.")
 
-        record_tuple=(newSitename,float(self.rlatedit.text()),float(self.rlonedit.text()),float(self.altedit.text()))
-        self.savebutton.disconnect()
+        record_tuple = (
+            newSitename,
+            float(self.rlatedit.text()),
+            float(self.rlonedit.text()),
+            float(self.altedit.text()),
+        )
 
-        c1 = insert_update_sitedetails(record_tuple,self.savebutton.text())
+        c1 = insert_update_sitedetails(record_tuple, self.savebutton.text())
         if c1:
+            self.sitecombo.blockSignals(True)
             self.sitecombo.clear()
-            self.sitelists = read_sitedetailsDB() 
-            self.sitecombo.addItem("Select from list") 
-            self.sitecombo.addItem("Add New Site") 
-            for item in self.sitelists:            
-                self.sitecombo.addItem(item)
-
-
-    def importfaq(self, thetabname=None):        
-        faqlist = read_FaqDB(thetabname,'') 
-        faqcount=0
-        
-        for item in faqlist:
-            roottreeitem = QTreeWidgetItem(self.faqtree)
-            roottreeitem.setText(0,item[2])
-            childtreeitem = QTreeWidgetItem()
-            childtreeitem.setText(0,item[3])
-            roottreeitem.addChild(childtreeitem)
+            self.sitelists = read_sitedetailsDB()
+            self.sitecombo.addItem("Select from list")
+            self.sitecombo.addItem("Add New Site")
+            for item in self.sitelists:
+                if item != "Generic Site":
+                    self.sitecombo.addItem(item)
+            self.sitecombo.blockSignals(False)
+            self.sitecombo.setCurrentText(newSitename)
 
 
     @pyqtSlot()
@@ -250,18 +285,21 @@ class SiteWidget(QWidget):
         '''
         delete_flag = messageUserDelete("Are you sure you want to delete this site?")
         if delete_flag:
-            # If any soil is associated with this site, on soil tables set  site_id=23 (Generic Site)
             c1 = delete_sitedetails(str(sitename))
-            self.deletebutton.disconnect()
             if c1:
+                self._reset_site_details_ui()
+
+                self.sitecombo.blockSignals(True)
                 self.sitecombo.clear()
-                self.sitelists = read_sitedetailsDB() #read_fieldDB()
-                # this way we don't need this entry in database and it is always on the top of the combo                
-                self.sitecombo.addItem("Select from list") 
-                self.sitecombo.addItem("Add New Site") 
-                for item in self.sitelists:            
+                self.sitelists = read_sitedetailsDB()
+                self.sitecombo.addItem("Select from list")
+                self.sitecombo.addItem("Add New Site")
+                for item in self.sitelists:
                     if item != "Generic Site":
                         self.sitecombo.addItem(item)
+                self.sitecombo.blockSignals(False)
+                self.sitecombo.setCurrentIndex(0)
+                self._reset_site_details_ui()
             return True
         return False
 
@@ -315,4 +353,31 @@ class SiteWidget(QWidget):
         """
         base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
         return os.path.join(base_path, relative_path)          
+
+    def importfaq(self, thetabname=None):
+        faqlist = read_FaqDB(thetabname, '')
+        for item in faqlist:
+            roottreeitem = QTreeWidgetItem(self.faqtree)
+            roottreeitem.setText(0, item[2])
+            childtreeitem = QTreeWidgetItem()
+            childtreeitem.setText(0, item[3])
+            roottreeitem.addChild(childtreeitem)
+
+    def _reset_site_details_ui(self):
+        self.MapWidget.setVisible(False)
+        self.rlatlabel.setVisible(False)
+        self.rlatedit.setVisible(False)
+        self.rlonlabel.setVisible(False)
+        self.rlonedit.setVisible(False)
+        self.altlabel.setVisible(False)
+        self.altedit.setVisible(False)
+        self.sitenamelabel.setVisible(False)
+        self.sitenameedit.setVisible(False)
+        self.savebutton.setVisible(False)
+        self.deletebutton.setVisible(False)
+
+        self.rlatedit.clear()
+        self.rlonedit.clear()
+        self.altedit.clear()
+        self.sitenameedit.clear()
 
